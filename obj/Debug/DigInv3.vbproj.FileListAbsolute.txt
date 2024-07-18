@@ -1,0 +1,34 @@
+C:\JETS\Src\DigInv VB.net 2008\obj\Debug\ResolveAssemblyReference.cache
+C:\JETS\Src\DigInv VB.net 2008\bin\DigInv3.exe
+C:\JETS\Src\DigInv VB.net 2008\bin\DigInv3.pdb
+C:\JETS\Src\DigInv VB.net 2008\bin\DigInv3.xml
+C:\JETS\Src\DigInv VB.net 2008\obj\Debug\DigInv3.exe
+C:\JETS\Src\DigInv VB.net 2008\obj\Debug\DigInv3.xml
+C:\JETS\Src\DigInv VB.net 2008\obj\Debug\DigInv3.pdb
+C:\JETS\Src\03 DigInv VB.net 2019\obj\Debug\DigInv3.xml
+C:\JETS\Src\03 DigInv VB.net 2019\obj\Debug\DigInv3.pdb
+C:\JETS\Src\03 DigInv VB.net 2019\obj\Debug\DigInv3.vbproj.AssemblyReference.cache
+C:\JETS\Src\03 DigInv VB.net 2019\obj\Debug\DigInv3.vbproj.CoreCompileInputs.cache
+C:\JETS\Src\03 DigInv VB.net 2019\obj\Debug\DigInv3.exe
+C:\JETS\Src\03 DigInv VB.net 2019\bin\DigInv3.exe.config
+C:\JETS\Src\03 DigInv VB.net 2019\bin\DigInv3.exe
+C:\JETS\Src\03 DigInv VB.net 2019\bin\DigInv3.pdb
+C:\JETS\Src\03 DigInv VB.net 2019\bin\DigInv3.xml
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\bin\DigInv3.exe.config
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\bin\DigInv3.exe
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\bin\DigInv3.pdb
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\bin\DigInv3.xml
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\obj\Debug\DigInv3.vbproj.AssemblyReference.cache
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\obj\Debug\DigInv3.vbproj.CoreCompileInputs.cache
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\obj\Debug\DigInv3.exe
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\obj\Debug\DigInv3.xml
+C:\JETS\Src\03 DigInv VB.net 2019 - Update\obj\Debug\DigInv3.pdb
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\bin\DigInv3.exe.config
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\bin\DigInv3.exe
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\bin\DigInv3.pdb
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\bin\DigInv3.xml
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\obj\Debug\DigInv3.vbproj.CoreCompileInputs.cache
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\obj\Debug\DigInv3.exe
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\obj\Debug\DigInv3.xml
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\obj\Debug\DigInv3.pdb
+C:\JETS\Src\04 DigInv VB.net 2019 CartaPorte31\obj\Debug\DigInv3.vbproj.AssemblyReference.cache
