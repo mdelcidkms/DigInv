@@ -128,7 +128,7 @@ Module ModMain
         SQL = SQL & "nvl(c.invopt_liqtaxseparate,'N')separateliqtax,c.phonenum,c.CREDITCODEID, c.CODONLIQINV,c.DISCPCNT,c.NETDAYS,c.ARDAYS,c.SALSTXPCNT, nvl(C.jmx_diginv_uso, 'G01') usocfdi, " & vbNewLine
         SQL = SQL & " c.address, c.address2, c.address3, c.city, c.state, c.zipcode,c.country, st.abbreviation soldstateabbr, ss.abbreviation shipstateabbr, " & vbNewLine
         SQL = SQL & "NVL(c.JMX_PMT_METHOD_INV,'PPD')METODOPAGO, NVL(c.JMX_PMT_FORM_INV,'99') FORMAPAGO, nvl(dockid, 'N') dockid From " & "sohdr s, invhdr i, customer c, shipname n, state st , state ss Where " & vbNewLine
-        SQL = SQL & "(c.JMX_PMT_METHOD_INV != 'PUE' or c.JMX_PMT_METHOD_INV IS NULL ) and s.ordernum = i.invhdrnum and s.customerid = c.customerid and c.customerid = n.customerid (+) and c.state = st.state (+) and n.state = ss.state (+) and ordstateid = 'R' " & " and (exported = 'N' or exported = 'C') order by invhdrnum "
+        SQL = SQL & "s.ordernum = i.invhdrnum and s.customerid = c.customerid and c.customerid = n.customerid (+) and c.state = st.state (+) and n.state = ss.state (+) and ordstateid = 'R' " & " and (exported = 'N' or exported = 'C') order by invhdrnum "
 
         OCM = New OracleCommand(SQL, conn)
         DT = New DataTable
@@ -1921,88 +1921,83 @@ ErrorHandler:  'write error file.
                                             done = done & "nove"
                                         Case Else
                                             done = done & Units(i)
-                                            '***********************************************************************'
-                                            'Name: SendEmail
-                                            'Description: Sends email to the error email account
-                                            'Params: 
-                                            '   - MSG : The message to be sent in the email
-                                            'Return Value: N/A
-                                            'Precondition(s): N/A
-                                            'Postcondition(s): The email has been sent out to the designated email account, or in case of an error the error message has been written to the error log
-                                            '***********************************************************************'
-                                            i = Len(done) - 2
-                        End If
-                            End If
-                            Length = Length - 1
-                            Case 1
-                            If Mid(buff, 1, 1) <> "0" Then
-                                i = Val(Mid(buff, 1, 1))
-                                If i <> CDbl("1") Then
-                                    If Trim(done) <> "" Then
-                                        If before <> "0" Then
-                                            If before = 2 Then 'If added to change 21 to veintiun not for 31 that still shuld be: treinta y un
-                                                done = Mid(done, 1, Len(done) - 1) & "i" & Units(i)
-                                            Else
-                                                done = done & " y " & Units(i)
-                                            End If
-                                        Else
-                                            done = done & Units(i)
-                                        End If
-                                    Else
-                                        done = done & Units(i)
+                                    End Select
+                                    If i <> 5 Then
+                                        done = done & denoms(1) & "tos "
                                     End If
                                 Else
-                                    If Trim(done) <> "" Then
-                                        ErrMsgLog = "Today: " & Format(Now, "MM/dd/yy HH:mm") & "---> Eror # " & Err.Number & "-->" & Err.Description & "." & vbNewLine & "Error on DigInv2 program, SendEmail sub" & vbNewLine
-                                        Call CkFileExists(DirToOutputError, ErrMsgLog, "ERR-DigInv3_3-SendEmail.txt")
-                                        End Sub
-
-    '***********************************************************************'
-    'Name: GetSugarCuota
-    'Description: Retrieves the sugar tax rate according to the year passed in
-    'Params: 
-    '   - Year : The year that the sugar tax rate is related to 
-    'Return Value: The sugar tax rate for the year passed in 
-    'Precondition(s): N/A
-    'Postcondition(s): Sugar tax rate has been returned 
-    '***********************************************************************'
-    Private Function GetSugarCuota(Year As String) As Double
-        Dim SQL As String, RS As Object, RS1 As Object
-        Dim OC As OracleCommand
-        Dim DT As DataTable
-
-        On Error GoTo ErrHndlr
-        SQL = "select * from sugartaxrate where year = '" & Year & "'"
-
-        Length = Length - 1
-        Case 2
-        If Mid(buff, 1, 1) = "1" Then
-            i = Val(Mid(buff, 2, 1))
-            If EndofPesos Then
-                done = done & buff & "/100 M.N."
-                Length = -2 'to finish the loop
-            Else
-                done = done & teens(i)
-                buff = Mid(buff, 2)
-                Length = Length - 2
-            End If
-        Else
-            i = Val(Mid(buff, 1, 1))
-            If EndofPesos Then
-                done = done & buff & "/100 M.N."
-                Length = -2 'to finish the loop
-            Else
-                done = done & tens(i)
-                'If Trim(tens(i)) = "" And Mid(buff, 2, 1) = "0" Then '1,100 comes out as: un mil ciento
-                If Trim(tens(i)) = "" And Mid(buff, 2, 1) = "0" And before = "1" Then '1,100 comes out as: un mil ciento ==> added before because 300 comes out as: tres cient
-                    done = Left(done, Len(done) - 3) & " "
-                End If
-                Length = Length - 1
-            End If
-        End If
-        End Select
-        before = Mid(buff, 1, 1)
-        buff = Mid(buff, 2)
+                                    done = done & denoms(1) & "to "
+                                End If
+                            End If
+                        Else
+                            i = Len(done) - 2
+                        End If
+                    End If
+                    Length = Length - 1
+                Case 1
+                    If Mid(buff, 1, 1) <> "0" Then
+                        i = Val(Mid(buff, 1, 1))
+                        If i <> CDbl("1") Then
+                            If Trim(done) <> "" Then
+                                If before <> "0" Then
+                                    If before = 2 Then 'If added to change 21 to veintiun not for 31 that still shuld be: treinta y un
+                                        done = Mid(done, 1, Len(done) - 1) & "i" & Units(i)
+                                    Else
+                                        done = done & " y " & Units(i)
+                                    End If
+                                Else
+                                    done = done & Units(i)
+                                End If
+                            Else
+                                done = done & Units(i)
+                            End If
+                        Else
+                            If Trim(done) <> "" Then
+                                If before = 2 Then 'If added to change 21 to veintiun not for 31 that still shuld be: treinta y un
+                                    done = Mid(done, 1, Len(done) - 1) & "iun"
+                                Else
+                                    done = done & " y un "
+                                End If
+                            Else
+                                done = done & "un "
+                            End If
+                        End If
+                    End If
+                    If Mid(buff, 1, 1) = "0" And passes = 1 Then
+                    Else
+                        If Length = 1 And Len(done) = 1 Then
+                            done = done & "peso"
+                        End If
+                    End If
+                    Length = Length - 1
+                Case 2
+                    If Mid(buff, 1, 1) = "1" Then
+                        i = Val(Mid(buff, 2, 1))
+                        If EndofPesos Then
+                            done = done & buff & "/100 M.N."
+                            Length = -2 'to finish the loop
+                        Else
+                            done = done & teens(i)
+                            buff = Mid(buff, 2)
+                            Length = Length - 2
+                        End If
+                    Else
+                        i = Val(Mid(buff, 1, 1))
+                        If EndofPesos Then
+                            done = done & buff & "/100 M.N."
+                            Length = -2 'to finish the loop
+                        Else
+                            done = done & tens(i)
+                            'If Trim(tens(i)) = "" And Mid(buff, 2, 1) = "0" Then '1,100 comes out as: un mil ciento
+                            If Trim(tens(i)) = "" And Mid(buff, 2, 1) = "0" And before = "1" Then '1,100 comes out as: un mil ciento ==> added before because 300 comes out as: tres cient
+                                done = Left(done, Len(done) - 3) & " "
+                            End If
+                            Length = Length - 1
+                        End If
+                    End If
+            End Select
+            before = Mid(buff, 1, 1)
+            buff = Mid(buff, 2)
         Loop
         Mid(done, 1, 1) = UCase(Mid(done, 1, 1))
         MoneyPhrase = done
