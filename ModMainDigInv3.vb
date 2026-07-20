@@ -515,13 +515,13 @@ Module ModMain
                         SqlTot = "select 'Cuota' as TIPFACIEP , " & IEPSperLiter & " as TATIEP, " & IEPSperLiter & " as FCTTATIEP,sum(lineliqtax) as IEPTRA " & vbNewLine
                         SqlTot = SqlTot & "from invdtl d, branch_item b where d.itemcode = b.itemcode and b.liqtax2 > 0 and " & vbNewLine
                         SqlTot = SqlTot & "invhdrnum = '" & DR("ordernum") & "' and lineliqtax >0 and lineprice > 0 and b.liqtax2 > 0 group by 'Cuota' " 'liqtax2" group by cuota instead of liqtax2.
-                        '30/Ene/2025 | JBS Mex
+
 
                         OCM = New OracleCommand(SqlTot, conn)
                         DTTOT = New DataTable
                         Adpt = New OracleDataAdapter(OCM)
                         Adpt.Fill(DTTOT)
-                        TOTAL = TOTAL & "TATIEP" & t & Space(5) & "26.5" & vbNewLine
+
                         SugarTaxAmt = 0
                         If DTTOT.Rows.Count > 0 Then
                             For Each DRTOT As DataRow In DTTOT.Rows
@@ -576,94 +576,38 @@ Module ModMain
                 Else
                     TOTAL = TOTAL & "TOTPAG  " & TotInvAmt & vbNewLine
                 End If
-                TOTAL = TOTAL & "IMPIVATRA1 " & (TotAmtToBeTaxed + TotIEPSAmt) & vbNewLine & "IVATRA1 " & TotalTax & vbNewLine
+
                 Exported = "N"
                 If Not SorianaErr Then Exported = "Y"
-                Else '---------END ADDITION REGARDING NOTA DE CARGO TOTAL...... 05/25/22
+
                 SQL = "Update sohdr set moduser = 'DigInv3', moddate = '" + Format(Now, "dd-MMM-yy") + "', exported = '" + Exported + "' where ordstateid = 'R' and (exported = 'N'  or exported = 'C' ) and ordernum = '" + DR("ordernum") + "'"
-                '------------05/20/22-------------------
+
                 If counter = 0 Then OTR = conn.BeginTransaction(IsolationLevel.ReadCommitted) Else OTR = conn.BeginTransaction()
 
                 CMOrdUpd = New OracleCommand(SQL, conn, OTR)
                 CMOrdUpd.ExecuteNonQuery()
                 OTR.Commit()
                 counter += 1
-                TOTAL = TOTAL & "TIPFACIVA1 Tasa " & vbNewLine & "TOTIVA1 16 " & vbNewLine
-                        End If
-        'TODO: Looks like this is where we can add the method of payment check, if it's 'PUE' then null out the HDRCP variable and carta porte does not get generated
-        'Check DocName = "FACTURA" and method payment is 'PUE' 
-        'Does this mean that we just completely do not write out the Invoice? Or where do we specify this is a complemento de pago? 
-        If DocName = "NOTA DE CARGO" Then HDRCP = vbNullString 'Nota de cargo does no have item informaion, for the moment we do no generate carta porte.
-        If Left(DR("dockid"), 1) <> "F" Then HDRCP = vbNullString
-        If Not SorianaErr Then
-            If DR("exported") <> "C" Then CkFileExists(DirToOutputData, HDR & DTL & TOTAL, "INV-" & Folio & "-" & DR("RFC") & "_" & Format(Now, "yyyyMMdd_HH-mm") & ".txt")
-            If Trim(HDRCP) <> vbNullString Then CkFileExists(DirToOutputData, HDRCP & DTLCPT & DTLCP & COMCP & TOTCP, "CTP-" & DR("invhdrnum") & " - " & Format(Now, "yyyy-MM-dd") & " at " & Format(Now, "HH-mm") & ".txt")
-        End If
-        HDR = vbNullString : DTL = vbNullString : TOTAL = vbNullString : XtraCustomsInfo = vbNullString : TotDiscAmt = 0 : HdrNo_SeparateXmlFlag = False : TotPercentages = 0
-        HDRCP = vbNullString : DTLCP = vbNullString : DTLCPT = vbNullString : TOTCP = vbNullString : COMCP = vbNullString : TotWeight = 0
-        IEPSnoIVA = 0 : TotIEPTra26_5 = 0
-        LiquorPresent = False
-        '*****----------------------------
-        TOTAL = TOTAL & "PRT_IEPTRA  " & TotIEPS_Prt & vbNewLine '04/20/18 per MasterEDI, instead of IEPTRA_PRT, now use PRT_IEPTRA
-        TOTAL = TOTAL & "IVARET  " & "0" & vbNewLine & "ISRRET  " & "0" & vbNewLine
-        '04/26/22 ---version 4.0
-        If IEPS_NO_SeparateXml And TotalTax_New > 0 And (Format(TotAmtNotTaxable + TotAmtToBeTaxed + TotalTax_New, "###.00")) <> Format(TotInvAmt, "###.00") Then
-            'TOTAL = TOTAL & "TOTPAG  " & TotAmtNotTaxable + TotAmtToBeTaxed + TotalTax_New
-            TOTAL = TOTAL & "TOTPAG  " & TotInvAmt & vbNewLine '08/25/23  -- I think it should be always totinvamt,  just comment above for now pending further testing.
-        Else
-            TOTAL = TOTAL & "TOTPAG  " & TotInvAmt & vbNewLine
-        End If
-
-        'SQL = "select exported,moddate, moduser from sohdr where ordstateid = 'R' and (exported = 'N'  or exported = 'C' ) order by ordernum for update"
-
-        Exported = "N"
-        If Not SorianaErr Then Exported = "Y"
 
 
-        SQL = "Update sohdr set moduser = 'DigInv3', moddate = '" + Format(Now, "dd-MMM-yy") + "', exported = '" + Exported + "' where ordstateid = 'R' and (exported = 'N'  or exported = 'C' ) and ordernum = '" + DR("ordernum") + "'"
-
-        If counter = 0 Then
-            OTR = conn.BeginTransaction(IsolationLevel.ReadCommitted)
-        Else
-            OTR = conn.BeginTransaction()
-        End If
-        CMOrdUpd = New OracleCommand(SQL, conn, OTR)
-        CMOrdUpd.ExecuteNonQuery()
-        OTR.Commit()
-        counter += 1
-
-
-        'OTR = conn.BeginTransaction(IsolationLevel.ReadCommitted)
-        'CMOrdUpd.Transaction = OTR
-        'CMOrdUpd = New OracleCommand(SQL, conn, OTR)
-        'CMOrdUpd.ExecuteNonQuery()
-        'OTR.Commit()
-        'RSOrdUpd.edit()
-        'If Not SorianaErr Then
-        '    RSOrdUpd!exported.Value = "Y" '08/23/17 ADDED IF
-        'End If
-        'RSOrdUpd!moduser.Value = "DigInv3"
-        'RSOrdUpd!moddate.Value = Format(Now, "MM/dd/yyyy HH:mm:ss")
-        'RSOrdUpd.Update()
-        'RSOrdUpd.movenext()
-
-        If DocName = "NOTA DE CARGO" Then HDRCP = vbNullString 'Nota de cargo does no have item informaion, for the moment we do no generate carta porte.
-        If Left(DR("dockid"), 1) <> "F" Then HDRCP = vbNullString
-        If Not SorianaErr Then
-            If DR("exported") <> "C" Then CkFileExists(DirToOutputData, HDR & DTL & TOTAL, "INV-" & Folio & "-" & DR("RFC") & "_" & Format(Now, "yyyyMMdd_HH-mm") & ".txt")
-            If Trim(HDRCP) <> vbNullString Then CkFileExists(DirToOutputData, HDRCP & DTLCPT & DTLCP & COMCP & TOTCP, "CTP-" & DR("invhdrnum") & " - " & Format(Now, "yyyy-MM-dd") & " at " & Format(Now, "HH-mm") & ".txt")
-        Else '09/15/17 changed to stop sending e-mail when error
-            'SendEmail "SORIANA INVOICE FOUND:  " & DR("ORDERNUM") & ", BUT NOT FOLIO DE ENTRADA FOUND " & vbNewLine & "THIS ORDER WON'T PROCESS."
-        End If
-        HDR = vbNullString : DTL = vbNullString : TOTAL = vbNullString : XtraCustomsInfo = vbNullString : TotDiscAmt = 0 : HdrNo_SeparateXmlFlag = False : TotPercentages = 0
-        HDRCP = vbNullString : DTLCP = vbNullString : DTLCPT = vbNullString : TOTCP = vbNullString : COMCP = vbNullString : TotWeight = 0
-        IEPSnoIVA = 0 : TotIEPTra26_5 = 0 '04/24/24 | 30/Ene/2025 | JBS Mex
-        LiquorPresent = False
-        Next
+                'TODO: Looks like this is where we can add the method of payment check, if it's 'PUE' then null out the HDRCP variable and carta porte does not get generated
+                'Check DocName = "FACTURA" and method payment is 'PUE' 
+                'Does this mean that we just completely do not write out the Invoice? Or where do we specify this is a complemento de pago? 
+                If DocName = "NOTA DE CARGO" Then HDRCP = vbNullString 'Nota de cargo does no have item informaion, for the moment we do no generate carta porte.
+                If Left(DR("dockid"), 1) <> "F" Then HDRCP = vbNullString
+                If Not SorianaErr Then
+                    If DR("exported") <> "C" Then CkFileExists(DirToOutputData, HDR & DTL & TOTAL, "INV-" & Folio & "-" & DR("RFC") & "_" & Format(Now, "yyyyMMdd_HH-mm") & ".txt")
+                    If Trim(HDRCP) <> vbNullString Then CkFileExists(DirToOutputData, HDRCP & DTLCPT & DTLCP & COMCP & TOTCP, "CTP-" & DR("invhdrnum") & " - " & Format(Now, "yyyy-MM-dd") & " at " & Format(Now, "HH-mm") & ".txt")
+                End If
+                HDR = vbNullString : DTL = vbNullString : TOTAL = vbNullString : XtraCustomsInfo = vbNullString : TotDiscAmt = 0 : HdrNo_SeparateXmlFlag = False : TotPercentages = 0
+                HDRCP = vbNullString : DTLCP = vbNullString : DTLCPT = vbNullString : TOTCP = vbNullString : COMCP = vbNullString : TotWeight = 0
+                IEPSnoIVA = 0 : TotIEPTra26_5 = 0
+                LiquorPresent = False
+            Next
 
         Else
-        ErrMsgLog = New String("*", 50) & vbNewLine & Format(Now, "MM/dd/yy HH:mm") & " -> ERROR:  No records found for invoices to print, but the program was run." & vbNewLine & "Error on RetrieveInvoices Routine.  Prog:  DigInv3." & vbNewLine & "PROGRAM ENDED WITH OUT PROCESSING ANYTHING!!!!" & vbNewLine & "SQL: " & vbNewLine & SQL & vbNewLine
-        CkFileExists(DirToOutputError, ErrMsgLog, "ERR-Dig-Inv3_3.log")
+            ErrMsgLog = New String("*", 50) & vbNewLine & Format(Now, "MM/dd/yy HH:mm") & " -> ERROR:  No records found for invoices to print, but the program was run." & vbNewLine & "Error on RetrieveInvoices Routine.  Prog:  DigInv3." & vbNewLine & "PROGRAM ENDED WITH OUT PROCESSING ANYTHING!!!!" & vbNewLine & "SQL: " & vbNewLine & SQL & vbNewLine
+            CkFileExists(DirToOutputError, ErrMsgLog, "ERR-Dig-Inv3_3.log")
         End If
         Exit Sub
 ErrHndlr:
@@ -717,965 +661,861 @@ ErrHndlr:
             'PLACA OTHER READ FROM TABLE LATER FOR NOW, DEFAULT VALUES
             COMCP = COMCP & "   COM_CPT_AUT_PLACAV " & "3901CM " & vbNewLine
             COMCP = COMCP & "   COM_CPT_AUT_ANIOV 2014" & vbNewLine & "COM_CPT_AUT_ASEGCAR TOKIO MARINE CIA DE SEGUROS  " & vbNewLine
-            Dim IvhdrNo, LineNo As String
-
-            Dim OCM As OracleCommand
-            Dim OTR As OracleTransaction
-            Dim dt, dtc As DataTable
-            Dim ItemCode As String
-            Dim ODR As OracleDataReader
-            Dim DRc As DataRow
-            Dim Adpt As OracleDataAdapter
-
-            On Error GoTo ErrHndlr
-            '----------SIR FOR CITY FRESKO DIGITAL INVOICE IN EA ONLY -------------------
-            If RFC = "CCF121101KQ4" Then 'carta porte added gross and ne weight to sql 
-                Sql = "select i.unitupccode,i.jancode,i.UNIT_ML,b.liqtax,nvl(b.liqtax2,0)liqtax2,b.eapercs,b.saltaxcode,b.eapercs, nvl(GROSSWEIGHT,0)  gross, round(nvl(GROSSWEIGHT,0) /2.205 ,2) grosskg ,nvl(netweight,0) net, " & vbNewLine
-                Sql = Sql & "b.mx_sat_catalog_id as satItem, b.mx_unitofmeasure as satUOM, nvl(b.liquorcode,0) liquorcode, " & vbNewLine
-                Sql = Sql & "D.INVHDRNUM, D.LINENUM, D.ITEMCODE, D.REMARKID, D.LINEDESC, (D.CSSHIPPED * B.EAPERCS + D.EASHIPPED) AS EASHIPPED, 0 AS CSSHIPPED," & vbNewLine
-                Sql = Sql & "ROUND(d.INVCSPRICE / B.EAPERCS * 100000000) / 100000000 As INVEAPRICE, D.LINETAX, " & vbNewLine
-                Sql = Sql & "D.LINEPRICE,D.LINECOST,D.LINEREDEM,D.LINETOTAL,D.INVCSPRICE,D.LINELIQTAX, D.LINESALESTAX "
-                Sql = Sql & "from invdtl d, jfcitem i, branch_item b where invhdrnum = '" & InvNum & "' " & vbNewLine
-                Sql = Sql & "and d.itemcode = i.itemcode and i.itemcode = b.itemcode and (eashipped > 0 or csshipped > 0)order by d.itemcode "
-            Else 'carta porte added gross and ne weight to sql 
-                Sql = "select i.unitupccode,i.jancode,b.liqtax,nvl(b.liqtax2,0)liqtax2,b.eapercs,b.saltaxcode,b.eapercs, nvl(GROSSWEIGHT,0)  gross, round(nvl(GROSSWEIGHT,0) /2.205 ,2) grosskg ,nvl(netweight,0) net, " & vbNewLine
-                Sql = Sql & "b.mx_sat_catalog_id as satItem, b.mx_unitofmeasure as satUOM, nvl(b.liquorcode,0) liquorcode, " & vbNewLine
-                Sql = Sql & "d.* from invdtl d, jfcitem i, branch_item b where invhdrnum = '" & InvNum & "' " & vbNewLine
-                Sql = Sql & "and d.itemcode = i.itemcode and i.itemcode = b.itemcode and (eashipped > 0 or csshipped > 0)order by d.itemcode "
+            COMCP = COMCP & "   COM_CPT_AUT_POLICAR TLJMX000244800 " & vbNewLine & "COM_CPT_AUT_PRIMSEG 900000" & vbNewLine
+            COMCP = COMCP & "COM_CPT_AUT_PESBRU  2 " & vbNewLine 'New for version 3 peso del vehiculo sin mercderia en toneladas.
+            '!!!!!!!!   CK HERE WHICH VALUES NEED TO BE CHANGED  !!!!!!!!!!!!!!!
+            If LiquorPresent Then
+                COMCP = COMCP & "   COM_CPT_AUT_ASEGMED Atlas " & vbNewLine 'Ask for correct information
+                COMCP = COMCP & "   COM_CPT_AUT_POLMED 1010101  " & vbNewLine
             End If
-            'Name: GetDtl
-            TotAmtToBeTaxed = 0 'Used to print next to iva msg to know total amt of taxable items
-            'Params: 
-            OCM = New OracleCommand(Sql, conn)
-            dt = New DataTable
-            Adpt = New OracleDataAdapter(OCM)
-            Adpt.Fill(dt)
-            '***********************************************************************'
-            If dt.Rows.Count > 0 Then
-                d = 0 ' If CS and EA, we separate into two lines, so we can't use i as detail line number.
-                For Each DR As DataRow In dt.Rows
-                    ItemCode = DR("ItemCode")
-                    DiscAmt = 0 : DiscExists = False : DiscPer = 0 'Clear up discounts when free items
-                    IEPSTasa = Val(vbNullString & DR("liqtax"))
-                    LiqTax2 = Val(vbNullString & DR("LiqTax2"))
-                    If IEPSTasa <> 0 Then IEPSTasaGlobal = IEPSTasa ' if stmt to getlast ieps tasa in the ord. When last item did not have tasa, was upadating tasa global to 0.
-                    IEPSAmt = vbNullString : LineIVA = vbNullString : IvaAmt = vbNullString 'use when ea and CS exists to properly calculate line iva (in DB amt is CS and EA combined)
-                    IEPSAmt_Prt = vbNullString
-                    If RFC = "NWM9709244W4" Then
-                        UPC = ("" & DR("jancode")) 'for WM use Jancode first, if not found, use UPC.
-                        If Val(UPC) = 0 Then UPC = ("" & DR("unitupccode"))
-                    Else 'Other than WM check upc first, if null, then look for Jan code
-                        UPC = ("" & DR("unitupccode"))
-                        If Val(UPC) = 0 Then UPC = ("" & DR("jancode"))
-                    End If
-                    If Val(UPC) = 0 Then UPC = vbNullString 'if both upc and jan code are 0, then don't print all zeroes, leave it blank
-                    If RFC = "NWM9709244W4" Then UPC = Format(Val(UPC), "0000000000000") 'WM wants 13 digits field. ---WAL-MART
 
-                    ItemDesc = vbNullString & DR("linedesc").ToString().TrimEnd()
-                    ItemCatalog = vbNullString & DR("satItem")
-                    UOMCatalog = vbNullString & DR("satuom")
+            COMCP = COMCP & "COM_CPT_FINAUTO " & vbNewLine & "COM_CPT_INIFIGTRA " & vbNewLine & "COM_CPT_FIG_TIPFIG 01" & vbNewLine
 
-                    '!---------------INVALID ITEM CATALOGS--------------------
-                    If Trim(ItemCatalog) = vbNullString Then ItemCatalog = "50171500" 'defatult item catalog 
-                    If Trim(ItemCatalog) = "50424800" Then ItemCatalog = "50171500" 'THIS ITEM CATALOG DOES NOT EXIST-- INVALID
-                    If Trim(ItemCatalog) = "50347000" Then ItemCatalog = "50171500" 'THIS ITEM CATALOG DOES NOT EXIST-- INVALID
+            If dtc.Rows.Count > 0 Then
+                'If there is operator data, use information
+                dtr = dtc.Rows(0)
+                COMCP = COMCP & "COM_CPT_FIG_RFCFIG " & dtr("RFC") & vbNewLine & "COM_CPT_FIG_NUMLIC " & dtr("LICENSENUM") & vbNewLine
+                COMCP = COMCP & "COM_CPT_FIG_NOMFIG " & dtr("FULLNAME") & vbNewLine & "COM_CPT_FINFIGTRA " & vbNewLine & "COM_CPT_FINCPT" & vbNewLine
+            Else
+                COMCP = COMCP & "COM_CPT_FIG_RFCFIG " & JFCRFC & vbNewLine & "COM_CPT_FIG_NUMLIC " & "680000033715 " & vbNewLine
+                COMCP = COMCP & "COM_CPT_FIG_NOMFIG " & "Jose Alberto Salas Aguilar " & vbNewLine & "COM_CPT_FINFIGTRA " & vbNewLine & "COM_CPT_FINCPT" & vbNewLine
+            End If
 
-                    '------MATERIAL PELIGROSO--- If "Si" we need dangerous product info. If "No", we do not put the info
-                    Peli = vbNullString : CvePeli = vbNullString : LiqPresentDtl = False '01/23/24 added  LiqPresentDtl = false 02/07/24
-                    Select Case Trim(ItemCatalog)
-                        Case "50202200", "50202201", "50202206", "50202210", "50121500", "50171708", "50121537", "14111519" 'Pescado, licor y vino, 50171708 
-                            If DR("liquorcode") = "3" Then
-                                Peli = "Si"
-                                CvePeli = "3065"
-                                LiquorPresent = True 'to send insurance info when peli is present
-                                LiqPresentDtl = True
-                            Else
-                                Peli = "No"
-                            End If
-                        Case "15111505" 'Gas butano Item 60080
+        Catch ex As Exception
+            Throw New Exception(ex.Message)
+        End Try
+    End Sub
+
+    '***********************************************************************'
+    'Name: GetDtl
+    'Description: Sets the details for an invoice and all its items
+    'Params: 
+    '   - InvNum : The invoice number to be looked up 
+    'Return Value: N/A
+    'Precondition(s): N/A
+    'Postcondition(s): Details for the invoice has been set to the global variable DTL 
+    '***********************************************************************'
+    Private Sub GetDtl(ByRef InvNum As String)
+
+        Dim SQL As String
+        Dim RSd, RS, RSc, Rsd2 As Object
+        Dim d As Short
+        Dim PricePlusLiqTax As Double
+        Dim IvaAmt, Units, Tst As String
+        Dim CustomsInfo, FoundCustomsDefault As Boolean
+        Dim IEPSTasa, IvaTasaDtl As Double
+        Dim UnitPrice, UPC, Importe As String 'Importe (Price * Qty)
+        Dim EaImpIvaIeps, CsImpIvaIeps As Double
+        Dim FirstPortionOfName As Short
+        Dim LineIVA, ItemDesc, TmpTotImp As String
+        Dim CSPrice, Eaprice, LiqTax2 As Double
+        Dim IEPSAmt, IEPSAmt_Prt As String
+        Dim CsImporte As Double 'ONLY USED WHEN CS & EA FOR LIQUOR NO DESGLOSE CALCULATION... ON EACH
+        Dim DocID, PortName, SQLInsert, DocDate As String
+        Dim SQLCustom As String
+        'CARTA PORTE
+        Dim DtlWeight As Double
+        Dim LiqPresentDtl As Boolean
+        Dim Peli, CvePeli As String 'Peli Material Peligroso (Dangerous Material)
+        Dim IvhdrNo, LineNo As String
+
+        Dim OCM As OracleCommand
+        Dim OTR As OracleTransaction
+        Dim dt, dtc As DataTable
+        Dim ItemCode As String
+        Dim ODR As OracleDataReader
+        Dim DRc As DataRow
+        Dim Adpt As OracleDataAdapter
+
+        On Error GoTo ErrHndlr
+        '----------SIR FOR CITY FRESKO DIGITAL INVOICE IN EA ONLY -------------------
+        If RFC = "CCF121101KQ4" Then 'carta porte added gross and ne weight to sql 
+            SQL = "select i.unitupccode,i.jancode,i.UNIT_ML,b.liqtax,nvl(b.liqtax2,0)liqtax2,b.eapercs,b.saltaxcode,b.eapercs, nvl(GROSSWEIGHT,0)  gross, round(nvl(GROSSWEIGHT,0) /2.205 ,2) grosskg ,nvl(netweight,0) net, " & vbNewLine
+            SQL = SQL & "b.mx_sat_catalog_id as satItem, b.mx_unitofmeasure as satUOM, nvl(b.liquorcode,0) liquorcode, " & vbNewLine
+            SQL = SQL & "D.INVHDRNUM, D.LINENUM, D.ITEMCODE, D.REMARKID, D.LINEDESC, (D.CSSHIPPED * B.EAPERCS + D.EASHIPPED) AS EASHIPPED, 0 AS CSSHIPPED," & vbNewLine
+            SQL = SQL & "ROUND(d.INVCSPRICE / B.EAPERCS * 100000000) / 100000000 As INVEAPRICE, D.LINETAX, " & vbNewLine
+            SQL = SQL & "D.LINEPRICE,D.LINECOST,D.LINEREDEM,D.LINETOTAL,D.INVCSPRICE,D.LINELIQTAX, D.LINESALESTAX "
+            SQL = SQL & "from invdtl d, jfcitem i, branch_item b where invhdrnum = '" & InvNum & "' " & vbNewLine
+            SQL = SQL & "and d.itemcode = i.itemcode and i.itemcode = b.itemcode and (eashipped > 0 or csshipped > 0)order by d.itemcode "
+        Else 'carta porte added gross and ne weight to sql 
+            SQL = "select i.unitupccode,i.jancode,b.liqtax,nvl(b.liqtax2,0)liqtax2,b.eapercs,b.saltaxcode,b.eapercs, nvl(GROSSWEIGHT,0)  gross, round(nvl(GROSSWEIGHT,0) /2.205 ,2) grosskg ,nvl(netweight,0) net, " & vbNewLine
+            SQL = SQL & "b.mx_sat_catalog_id as satItem, b.mx_unitofmeasure as satUOM, nvl(b.liquorcode,0) liquorcode, " & vbNewLine
+            SQL = SQL & "d.* from invdtl d, jfcitem i, branch_item b where invhdrnum = '" & InvNum & "' " & vbNewLine
+            SQL = SQL & "and d.itemcode = i.itemcode and i.itemcode = b.itemcode and (eashipped > 0 or csshipped > 0)order by d.itemcode "
+        End If
+
+        TotAmtToBeTaxed = 0 'Used to print next to iva msg to know total amt of taxable items
+
+        OCM = New OracleCommand(SQL, conn)
+        dt = New DataTable
+        Adpt = New OracleDataAdapter(OCM)
+        Adpt.Fill(dt)
+
+        If dt.Rows.Count > 0 Then
+            d = 0 ' If CS and EA, we separate into two lines, so we can't use i as detail line number.
+            For Each DR As DataRow In dt.Rows
+                ItemCode = DR("ItemCode")
+                DiscAmt = 0 : DiscExists = False : DiscPer = 0 'Clear up discounts when free items
+                IEPSTasa = Val(vbNullString & DR("liqtax"))
+                LiqTax2 = Val(vbNullString & DR("LiqTax2"))
+                If IEPSTasa <> 0 Then IEPSTasaGlobal = IEPSTasa ' if stmt to getlast ieps tasa in the ord. When last item did not have tasa, was upadating tasa global to 0.
+                IEPSAmt = vbNullString : LineIVA = vbNullString : IvaAmt = vbNullString 'use when ea and CS exists to properly calculate line iva (in DB amt is CS and EA combined)
+                IEPSAmt_Prt = vbNullString
+                If RFC = "NWM9709244W4" Then
+                    UPC = ("" & DR("jancode")) 'for WM use Jancode first, if not found, use UPC.
+                    If Val(UPC) = 0 Then UPC = ("" & DR("unitupccode"))
+                Else 'Other than WM check upc first, if null, then look for Jan code
+                    UPC = ("" & DR("unitupccode"))
+                    If Val(UPC) = 0 Then UPC = ("" & DR("jancode"))
+                End If
+                If Val(UPC) = 0 Then UPC = vbNullString 'if both upc and jan code are 0, then don't print all zeroes, leave it blank
+                If RFC = "NWM9709244W4" Then UPC = Format(Val(UPC), "0000000000000") 'WM wants 13 digits field. ---WAL-MART
+
+                ItemDesc = vbNullString & DR("linedesc").ToString().TrimEnd()
+                ItemCatalog = vbNullString & DR("satItem")
+                UOMCatalog = vbNullString & DR("satuom")
+
+                '!---------------INVALID ITEM CATALOGS--------------------
+                If Trim(ItemCatalog) = vbNullString Then ItemCatalog = "50171500" 'defatult item catalog 
+                If Trim(ItemCatalog) = "50424800" Then ItemCatalog = "50171500" 'THIS ITEM CATALOG DOES NOT EXIST-- INVALID
+                If Trim(ItemCatalog) = "50347000" Then ItemCatalog = "50171500" 'THIS ITEM CATALOG DOES NOT EXIST-- INVALID
+
+                '------MATERIAL PELIGROSO--- If "Si" we need dangerous product info. If "No", we do not put the info
+                Peli = vbNullString : CvePeli = vbNullString : LiqPresentDtl = False '01/23/24 added  LiqPresentDtl = false 02/07/24
+                Select Case Trim(ItemCatalog)
+                    Case "50202200", "50202201", "50202206", "50202210", "50121500", "50171708", "50121537", "14111519" 'Pescado, licor y vino, 50171708 
+                        If DR("liquorcode") = "3" Then
                             Peli = "Si"
-                            CvePeli = "1011"
+                            CvePeli = "3065"
                             LiquorPresent = True 'to send insurance info when peli is present
                             LiqPresentDtl = True
-                        Case Else
-                            LiqPresentDtl = False
-                    End Select
-
-                    d = d + 1
-                    Eaprice = DR("INVEAPRICE")
-                    CSPrice = DR("INVCSPRICE")
-
-                    If DR("eashipped") > 0 And DR("csshipped") > 0 Then
-                        Units = "CE"
-                    ElseIf DR("eashipped") > 0 Then
-                        Units = "EA"
-                        UOMCatalog = "H87" 'JMX NOW WANTS TO CHANGE UNIT OF MEASURE TO BE 'XBX' IF CASES, OR 'H87' IF EACHES.
-                    Else 'Either just cases, or no cases and no each.  When xtra charges in detail (AC, tax, etc)
-                        Units = "CA"
-                        UOMCatalog = "XBX" 'JMX NOW WANTS TO CHANGE UNIT OF MEASURE TO BE 'XBX' IF CASES, OR 'H87' IF EACHES.
-                    End If
-                    If DocName = "NOTA DE CARGO" Then
-                        UOMCatalog = "ACT"
-                        ItemCatalog = "84111506"
-                    End If
-
-                    If DR("linetax") - DR("lineliqtax") > 0 Then 'LineTax has combined tax (iva & ieps), to get iva, substract both taxes.
-                        IvaTasaDtl = IVATasa
-                        TotAmtToBeTaxed = Val(CStr(TotAmtToBeTaxed)) + Val(DR("lineprice")) + Val(DR("lineliqtax")) 'SUBTAI
-                        TotalTax = CStr(Val(TotalTax) + (Val(DR("linetax")) - Val(DR("lineliqtax")))) 'calculate totaltax based on detail
-                    Else
-                        IvaTasaDtl = 0
-                        TotAmtNotTaxable = Val(CStr(TotAmtNotTaxable)) + Val(DR("lineprice")) 'SUBTSI
-                    End If
-                    IEPSAmt_Prt = vbNullString 'added on 05/23/13 bug detected by JMX users... was not being cleared...
-                    IvhdrNo = DR("invhdrnum")
-                    LineNo = DR("linenum")
-                    SeparateLiqTaxFlag = IepsSeparate(IvhdrNo, LineNo)
-                    'If LiqTax2 > 0 Then IEPSTasa = 0.0001 'Added per MasterEDI on 08/09/17 !!!!!!!!! for WM, but still it did not work, commented out for version 3.3
-                    TotAmtBeforeTaxes = TotAmtBeforeTaxes + DR("lineprice")
-
-                    DTL = DTL & vbNewLine 'Just to see where detail starts on text file
-                    DTL = DTL & "D" & vbNewLine
-                    If Val(UPC) = 0 Then UPC = vbNullString 'if both upc and jan code are 0, then don't print all zeroes, leave it blank
-                    Select Case Units
-                        Case Is = "EA"
-                            UnitPrice = Format(Eaprice, "##0.00")
-                            Importe = CDbl(DR("lineprice"))
-                            TotImp = TotImp + Val(Importe)
-                            If Val(CStr(IEPSTasa)) > 0 Then
-                                IEPSAmt = CDbl(DR("lineliqtax"))
-                            End If
-
-                            If LiqTax2 > 0 Then
-                                IEPSAmt = CDbl(DR("lineliqtax"))
-                            End If
-
-                            If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
-                                IEPSAmt_Prt = IEPSAmt 'Ieps printing
-                                TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
-                            End If
-
-                            If (SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0) Then 'Price should add IEPS on inv to be sent on EXTRA FIELDS
-                                If IEPSTasa > 0 Then UnitPrice = Format(Eaprice + (Eaprice * (IEPSTasa / 100)), "0.00###")
-
-                                Importe = Format(Val(DR("lineprice")) + Val(DR("lineliqtax")), "##0.00")
-                                If LiqTax2 > 0 Then UnitPrice = CStr(Val(Importe) / DR("eashipped"))
-
-                                IEPSAmt_Prt = vbNullString
-                            End If
-
-                            If IvaTasaDtl > 0 Then
-                                LineIVA = CStr(Val(DR("linetax")) - Val(DR("lineliqtax")))
-                                TotalTax_New = TotalTax_New + CDbl(LineIVA) '----04/12/19 sir 1794, when ea and cs present one cent difference and it doesn't generate cfdi
-                            End If
-
-                            TotImp_Prt = TotImp_Prt + Val(Importe)
-
-                            DTL = DTL & "CANTID  " & DR("eashipped") & vbNewLine & "CANTID_EA  " & DR("eashipped") & vbNewLine & "DESCRI  " & ItemDesc & vbNewLine
-                            DTL = DTL & "CANPAQ  " & DR("eashipped") & vbNewLine
-                            DTL = DTL & "CANEMP  " & DR("eashipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
-                            DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine 'per Master EDI to be able to print item code on pdf.
-                            DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine 'New SAT item code
-                            DTL = DTL & "CVEUNIDAD           " & UOMCatalog & vbNewLine
-                            DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & "1" & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
-
-                            DTLCP = DTLCP & "      COM_CPT_INIMER " & vbNewLine & vbNewLine 'Inicio de mercancia
-                            DTLCP = DTLCP & "      COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine 'BienesTransp (clave de producto)
-                            DTLCP = DTLCP & "      COM_CPT_MER_DESCRI " & ItemDesc & vbNewLine
-                            DTLCP = DTLCP & "      COM_CPT_MER_CANTID 1" & vbNewLine
-                            DTLCP = DTLCP & "      COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine
-
-                            DtlWeight = RoundUpToDecimals((DR("eashipped") / DR("eapercs") * DR("grosskg")), 2)
-                            If DtlWeight = 0 Then DtlWeight = 0.01
-                            TotWeight = TotWeight + DtlWeight
-                            DTLCP = DTLCP & "      COM_CPT_MER_PKG " & DtlWeight & vbNewLine
-                            IvaTasaDtl = IVATasa
-                            'FOR PRODUCTO PELIGROSO WE NEED TO READ A TABLE FOR CLAVEMATERIALPELIGROSO
-                            If LiqPresentDtl Then
-                                DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
-                                DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   " & CvePeli & vbNewLine '3065  drinks 24% pero no más de 70%  alcohol , or 1011 gas butano
-                                DTLCP = DTLCP & "      COM_CPT_MER_EMB 4G" & vbNewLine '4C1 modified to 4G per Ma Elena
-                            End If
-                            If Peli = "No" Then
-                                DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
-                            End If
-                            DTLCP = DTLCP & "      COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
-                            DTLCP = DTLCP & "         COM_CPT_CMER_CANTID " & DR("eashipped") & vbNewLine
-                            DTLCP = DTLCP & "         COM_CPT_CMER_IDORI OR000001" & vbNewLine
-                            DTLCP = DTLCP & "         COM_CPT_CMER_IDDES DE000001" & vbNewLine
-                            DTLCP = DTLCP & "      COM_CPT_FINCANTRAN" & vbNewLine
-                            DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
-
-                            '----------------------CHANGES FOR FREE PRODUCT-----------------
-                            If Eaprice = 0 Then 'free
-                                Eaprice = 0.01
-                                DiscExists = True
-                                DiscPer = 100
-                                DiscAmt = 0.01 * DR("eashipped") 'DO NOT Accumulate total discount DiscAmt + (0.01 * DR("EASHIPPED"))
-                                IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
-                                LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
-                                TotDiscAmt = TotDiscAmt + DiscAmt
-                            End If
-
-                            If RFC <> "PHI830429MG6" Then '-----------------Palacio de Hierro doesn't want 0 when iva is 0
-                                If Trim(LineIVA) = vbNullString Then LineIVA = "0.00" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0.00"
-                            End If
-
-                            'NO TASIPE When 0, NO MONIPE   When 0, NO TASIEP  When 0, NO MONIEP WHEN 0
-                            If Val(CStr(IvaTasaDtl)) > 0 Then 'IF TO JUST SEND THESE WHEN > 0 
-                                DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine
-                                DTL = DTL & "MONIPE  " & LineIVA & vbNewLine
-                            End If
-
-                            '--------------------OBJECTO DE IMPUESTO ------------
-                            If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
-                                If SeparateLiqTaxFlag = "N" Then
-                                    DTL = DTL & "OBJIMP 02" & vbNewLine 'TEMP CHANGED EVERYTHING TO 02
-                                Else
-                                    DTL = DTL & "OBJIMP 02" & vbNewLine
-                                End If
-                                If Val(CStr(IvaTasaDtl)) = 0 Then DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
-                            Else
-                                If Val(CStr(IvaTasaDtl)) > 0 Then
-                                    DTL = DTL & "OBJIMP 02" & vbNewLine
-                                Else
-                                    If DiscExists Then
-                                        DTL = DTL & "OBJIMP 01" & vbNewLine 'WHEN FREE ITEMS NO IVA SHOULD BE REPORTED
-                                        DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
-                                    Else
-                                        DTL = DTL & "OBJIMP 02" & vbNewLine ' PER MA. ELENA  ALL ITEMS SHOULD BE 02, JFC DOES NOT HAVE 01 TYPE
-                                        DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                                        DTL = DTL & "IMPORTIPE " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                                        DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
-                                    End If
-                                End If
-                            End If
-                            'HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
-                                DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                                DTL = DTL & "IMPORTIPE " & Format((Eaprice * DR("eashipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
-                                DTL = DTL & "TIPIPETR Tasa" & vbNewLine
-                                TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
-                            End If
-                            DtlWeight = RoundUpToDecimals((DR("eashipped") / DR("eapercs") * DR("grosskg")), 2)
-                            DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
-                            DTL = DTL & "IMPIVAIEPS  " & CDbl(DR("linetotal")) & vbNewLine
-                            DTL = DTL & "PBRUDE_IEPS  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
-                            DTL = DTL & "IMPBRU_PRT  " & Importe & vbNewLine
-
-                            '********************************************SIR 1794********************************************************
-                            If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
-                                DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
-                                DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
-                                DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
-                                DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
-                            Else
-                                If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
-                                DTL = DTL & "PBRUDE  " & Format(Eaprice, "##0.00") & vbNewLine
-                                DTL = DTL & "VALUNI  " & Format(Eaprice, "##0.00") & vbNewLine
-                                DTL = DTL & "IMPBRU  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                                DTL = DTL & "IMPORT  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                            End If
-
-                            '---------SUGARY DRINKS------------------
-                            If LiqTax2 > 0 Then
-                                If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then
-                                    DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
-                                    DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
-                                    'VERSION 4 DO NOT ADD THE NOT TAXABLE TO FREE PRODUC- INVOICE WILL ERROR OUT COMMENT THESE TWO LINES
-                                    DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
-                                    'SPECITY THE IVA WHEN IT IS 0% like in SOME OF the sugar products which have IEPS but 0% IVA
-                                    DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
-
-                                    If Val(CStr(IvaTasaDtl)) = 0 Then
-                                        DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
-                                        DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((Eaprice * DR("eashipped"))) + CDbl(IEPSAmt) & vbNewLine
-                                        IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
-                                    Else
-                                        If Trim(LineIVA) = vbNullString Then LineIVA = "0.00" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0.00" '04/20/18
-                                    End If
-                                End If
-                            End If
-
-                            If DiscExists Then
-                                DTL = DTL & "TDECON    " & DiscPer & vbNewLine
-                                DTL = DTL & "MDECON    " & (Eaprice * DR("eashipped")) * (DiscPer / 100) & vbNewLine
-                            Else
-                                DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine 'NO DESCUENTO EN DETALLE HARD CODE 0
-                            End If
-                            If SeparateLiqTaxFlag = "N" Then
-                                DTL = DTL & "NUMLIN    " & d & vbNewLine
-                                TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
-                                Case Is = "CA"
-                                UnitPrice = Format(CDbl(CSPrice), "##0.00")
-                                Importe = CDbl(DR("lineprice"))
-                                TotImp = TotImp + Val(Importe) 'Importe sin ieps
-                                If Val(CStr(IEPSTasa)) > 0 Then
-                                    IEPSAmt = CDbl(DR("lineliqtax")) 'SAT IEPSAmt
-                                End If
-                                If LiqTax2 > 0 Then
-                                    IEPSAmt = CDbl(DR("lineliqtax"))
-                                End If
-                                If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
-                                    IEPSAmt_Prt = IEPSAmt 'Ieps printing
-                                    TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
-                                End If
-                                If (SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0) Then 'Price should add IEPS on inv
-                                    If IEPSTasa > 0 Then UnitPrice = Format(CSPrice + (CSPrice * (IEPSTasa / 100)), "##0.00000")
-                                    If LiqTax2 > 0 Then UnitPrice = Format(CSPrice + LiqTax2, "##0.00000")
-                                    Importe = Format(Val(DR("lineprice")) + Val(DR("lineliqtax")), "##0.00")
-                                    IEPSAmt_Prt = vbNullString
-                                End If
-                                If Val(Importe) = 0 And TotInvAmt <> 0 Then 'when eaqty and csqty = 0, but detail exists, probably XTRA CHARGE!!!
-                                    Importe = Format(CDbl(DR("lineprice")), "##0.00")
-                                    UnitPrice = "0.00"
-                                End If
-                                If IvaTasaDtl > 0 Then
-                                    LineIVA = CStr(Val(DR("linetax")) - Val(DR("lineliqtax")))
-                                    TotalTax_New = TotalTax_New + CDbl(LineIVA)
-                                End If
-                                TotImp_Prt = TotImp_Prt + Val(Importe) 'Total importe a imprimir (Accumulate accordingly for printing pursposes which is diff. for SAT purposes)
-                                DTL = DTL & "D" & vbNewLine
-                                DTL = DTL & "CANTID  " & DR("csshipped") & vbNewLine & "CANTID_CA  " & DR("csshipped") & vbNewLine & "DESCRI  " & ItemDesc.ToString.Trim & vbNewLine
-                                DTL = DTL & "CANPAQ  " & DR("csshipped") & vbNewLine
-                                DTL = DTL & "CANEMP  " & DR("csshipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
-                                DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine
-                                DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine
-                                DTL = DTL & "CVEUNIDAD     " & UOMCatalog & vbNewLine
-                                DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & DR("eapercs") & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
-
-                                DTLCP = DTLCP & "COM_CPT_INIMER " & vbNewLine & vbNewLine 'Inicio de mercancia
-                                DTLCP = DTLCP & "   COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine 'BienesTransp (clave de producto)
-                                DTLCP = DTLCP & "   COM_CPT_MER_DESCRI " & ItemDesc & vbNewLine
-                                DTLCP = DTLCP & "   COM_CPT_MER_CANTID 1" & vbNewLine
-                                DTLCP = DTLCP & "   COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine '
-                                DtlWeight = RoundUpToDecimals(DR("csshipped") * DR("grosskg"), 2)
-                                If DtlWeight = 0 Then DtlWeight = 0.01
-                                TotWeight = TotWeight + DtlWeight
-                                DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight e  PesoEnKg
-                                If LiqPresentDtl Then
-                                    DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
-                                    DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no más de 70% de alcohol en volumen
-                                    DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
-                                End If
-                                If Peli = "No" Then
-                                    DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
-                                End If
-
-                                DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
-                                DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("csshipped") & vbNewLine
-                                DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
-                                DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
-                                DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
-                                DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
-                                IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
-                                '----------------------CHANGES FOR FREE PRODUCT-----------------
-                                If CSPrice = 0 Then 'free
-                                    CSPrice = 0.01
-                                    DiscExists = True
-                                    DiscPer = 100
-                                    DiscAmt = 0.01 * DR("csshipped")
-                                    IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
-                                    LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
-                                    TotDiscAmt = TotDiscAmt + DiscAmt
-                                End If
-
-                                If RFC <> "PHI830429MG6" Then
-                                    If Trim(LineIVA) = vbNullString Then LineIVA = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0"
-                                End If
-
-                                If Val(CStr(IvaTasaDtl)) > 0 Then
-                                    DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine & "MONIPE  " & LineIVA & vbNewLine
-                                Else
-                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
-                                End If
-
-                                '--------------------OBJECTO DE IMPUESTO ------------
-                                If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
-                                    If SeparateLiqTaxFlag = "N" Then
-                                        If DiscExists Then
-                                            DTL = DTL & "OBJIMP 01" & vbNewLine
-                                        Else
-                                            DTL = DTL & "OBJIMP 02" & vbNewLine
-                                        End If
-                                    Else
-                                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                                    End If
-                                Else
-                                    If Val(CStr(IvaTasaDtl)) > 0 Then
-                                        If SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0 Then
-                                            DTL = DTL & "OBJIMP 02" & vbNewLine
-                                        Else
-                                            DTL = DTL & "OBJIMP 02" & vbNewLine
-                                        End If
-                                    Else 'ivatasadtl = 0
-                                        If DiscExists Then 'IF FREE ITEM USE OBJIMP 01 (NO OBJETO DE IMPUESTO)
-                                            DTL = DTL & "OBJIMP 01" & vbNewLine
-                                        Else
-                                            DTL = DTL & "OBJIMP 02" & vbNewLine
-                                        End If
-                                        DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
-                                        If DiscExists = False Then
-                                            DTL = DTL & "FCTTASIPE   0.000000" & vbNewLine
-                                            DTL = DTL & "IMPORTIPE " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
-                                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
-                                        End If
-                                    End If
-                                End If
-                                If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
-                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                                    DTL = DTL & "IMPORTIPE " & Format((CSPrice * DR("csshipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
-                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine
-                                    TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
-                                End If
-                                '052424 JBS An: fixed double round up issue,  
-                                DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
-                                DTL = DTL & "IMPIVAIEPS  " & CDbl(DR("linetotal")) & vbNewLine
-                                DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine
-                                DTL = DTL & "IMPBRU_PRT  " & Importe & vbNewLine
-
-                                '********************************************SIR 1794********************************************************
-                                If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
-                                    DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
-                                    DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
-                                    DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00") & vbNewLine
-                                    DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00") & vbNewLine
-                                Else
-                                    If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
-                                    DTL = DTL & "PBRUDE  " & Format(CSPrice, "##0.00") & vbNewLine
-                                    DTL = DTL & "IMPBRU  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
-                                    DTL = DTL & "VALUNI  " & Format(CSPrice, "##0.00") & vbNewLine
-                                    DTL = DTL & "IMPORT  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
-                                End If
-
-                                TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
-                                If LiqTax2 > 0 Then '---------SUGARY DRINKS!!!!!!!!!!  1.17 per liter ------------------
-                                    If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then
-                                        DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
-                                        DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
-                                        DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
-                                        DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
-
-                                        If Val(CStr(IvaTasaDtl)) = 0 Then
-                                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                                            DTL = DTL & "IMPORTIPE " & Format(CSPrice * DR("csshipped") + CDbl(IEPSAmt), "##0.00") & vbNewLine 'Base to calculate Tasa 0%
-                                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
-                                            IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
-                                        End If
-                                    End If
-                                End If
-                                If DiscExists Then
-                                    DTL = DTL & "TDECON    " & DiscPer & vbNewLine
-                                    DTL = DTL & "MDECON    " & (CSPrice * DR("csshipped")) * (DiscPer / 100) & vbNewLine
-                                Else
-                                    DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine 'NO DESCUENTO EN DETALLE HARD CODE 0
-                                End If
-                                '------------------------------------------------------------------------------------------------------
-                                DTL = DTL & "NUMLIN  " & d & vbNewLine
-                                Case Is = "CE"
-                                '---------------------LiqTax2 = 4.69-------------------------'
-                                CsImpIvaIeps = 0 : EaImpIvaIeps = 0
-                                'PRICEPLUSLIQTAX USED TO CALCULATE IVA BECAUSE IVA INCLUDES LIQ TAX ON TOP OF PRICE.
-                                PricePlusLiqTax = Val(DR("INVCSPRICE")) + (Val(DR("INVCSPRICE")) * (IEPSTasa / 100))
-                                If LiqTax2 > 0 Then PricePlusLiqTax = Val(DR("INVCSPRICE")) + LiqTax2 '---12/26/13
-                                'this line is done here because we will separate cases line from each line. Because this is the 1st line, needs to have everything
-                                UnitPrice = Format(CSPrice, "##0.00")
-                                Importe = Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###")
-                                TotImp = TotImp + Val(Importe)
-                                If Val(CStr(IEPSTasa)) > 0 Then IEPSAmt = Format((Val(CStr(CSPrice)) * DR("csshipped")) * (IEPSTasa / 100), "##0.00###") 'SAT IEPSAmt
-                                If LiqTax2 > 0 Then IEPSAmt = Format(DR("csshipped") * LiqTax2, "##0.00")
-                                If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
-                                    IEPSAmt_Prt = IEPSAmt
-                                    TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
-                                End If
-                                If (SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0) Then 'Price should add IEPS on inv
-                                    If Val(CStr(IEPSTasa)) > 0 Then UnitPrice = Format(DR("INVCSPRICE") + (DR("INVCSPRICE") * (IEPSTasa / 100)), "##0.00###")
-                                    If LiqTax2 > 0 Then UnitPrice = Format(DR("INVCSPRICE") + LiqTax2, "##0.00###")
-                                    Importe = Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###")
-                                    CsImporte = CDbl(Importe) 'ONLY USED WHEN CS & EA FOR LIQUOR NO DESGLOSE CALCULATION... ON EACH
-                                    IEPSAmt_Prt = vbNullString
-                                End If
-                                TotImp_Prt = TotImp_Prt + Val(Importe)
-                                If Val(CStr(IvaTasaDtl)) > 0 Then
-                                    IvaAmt = CStr(PricePlusLiqTax * DR("csshipped") * (IVATasa / 100))
-                                    IvaAmt = RoundUpToDecimals(IvaAmt, 2)
-                                    TotalTax_New = TotalTax_New + CDbl(IvaAmt)
-                                End If
-                                CsImpIvaIeps = (Val(CStr(CSPrice)) * DR("csshipped")) + Val(IvaAmt) + Val(IEPSAmt)
-                                Units = "CA"
-                                UOMCatalog = "XBX"
-                                DTL = DTL & "CANTID  " & DR("csshipped") & vbNewLine & "CANTID_CA  " & DR("csshipped") & vbNewLine & "DESCRI  " & ItemDesc.ToString.Trim & vbNewLine
-                                DTL = DTL & "CANPAQ  " & DR("csshipped") & vbNewLine
-                                DTL = DTL & "CANEMP  " & DR("csshipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
-                                DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine
-                                DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine
-                                DTL = DTL & "CVEUNIDAD     " & UOMCatalog & vbNewLine
-                                DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & DR("eapercs") & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
-                                DTLCP = DTLCP & "COM_CPT_INIMER " & vbNewLine & vbNewLine 'Inicio de mercancia
-                                DTLCP = DTLCP & "   COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine 'BienesTransp (clave de producto)
-                                DTLCP = DTLCP & "   COM_CPT_MER_DESCRI " & ItemDesc & vbNewLine
-                                DTLCP = DTLCP & "   COM_CPT_MER_CANTID 1" & vbNewLine
-                                DTLCP = DTLCP & "   COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine '
-
-                                DtlWeight = RoundUpToDecimals(DR("csshipped") * DR("grosskg"), 2)
-                                If DtlWeight = 0 Then DtlWeight = 0.01
-                                TotWeight = TotWeight + DtlWeight
-                                DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight  PesoEnKg
-                                If LiqPresentDtl Then
-                                    DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
-                                    DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no más de 70% de alcohol en volumen
-                                    DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
-                                End If
-                                If Peli = "No" Then
-                                    DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
-                                End If
-                                DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
-                                DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("csshipped") & vbNewLine
-                                DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
-                                DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
-                                DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
-                                DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
-                                DTL = DTL & "IMPORT  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine '052124 JBS An: corrected decimal format.
-                                If CSPrice = 0 Then 'FREE CASES FIRST (THIS IS WHEN CS AND EA PRESENT)
-                                    CSPrice = 0.01
-                                    DiscExists = True
-                                    DiscPer = 100
-                                    DiscAmt = 0.01 * DR("csshipped")
-                                    IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
-                                    LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
-                                    TotDiscAmt = TotDiscAmt + DiscAmt
-                                End If
-                                If RFC <> "PHI830429MG6" Then
-                                    If Trim(IvaAmt) = vbNullString Then IvaAmt = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0"
-                                End If
-
-                                DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine
-                                DTL = DTL & "MONIPE  " & IvaAmt & vbNewLine
-
-                                '--------------------OBJECTO DE IMPUESTO --------------
-                                If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
-                                    If SeparateLiqTaxFlag = "N" Then
-                                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                                    Else
-                                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                                    End If
-                                Else
-                                    If Val(CStr(IvaTasaDtl)) > 0 Then
-                                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                                    Else
-                                        If DiscExists Then
-                                            DTL = DTL & "OBJIMP 01" & vbNewLine
-                                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
-                                        Else
-                                            DTL = DTL & "OBJIMP 02" & vbNewLine
-                                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                                            DTL = DTL & "IMPORTIPE " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
-                                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
-                                        End If
-                                    End If
-                                End If
-                                If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
-                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                                    DTL = DTL & "IMPORTIPE " & Format((CSPrice * DR("csshipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
-                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine
-                                    TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
-                                End If
-
-                                DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
-                                DTL = DTL & "IMPIVAIEPS  " & CsImpIvaIeps & vbNewLine
-                                DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine
-                                DTL = DTL & "IMPBRU_PRT  " & CDbl(Importe) & vbNewLine
-
-                                '********************************************SIR 1794********************************************************
-                                If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
-                                    DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
-                                    DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
-                                    DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###") & vbNewLine
-                                    DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###") & vbNewLine
-                                Else
-                                    If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
-                                    DTL = DTL & "PBRUDE  " & Format(CSPrice, "##0.00") & vbNewLine
-                                    DTL = DTL & "IMPBRU  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
-                                    DTL = DTL & "VALUNI  " & Format(CSPrice, "##0.00") & vbNewLine
-                                    DTL = DTL & "IMPORT  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
-                                End If
-                                '052624 JBS An: this format will just return "0" instead of roundup. 
-                                'IvaAmt = Format(IvaAmt, "0.00") '01/27/23 ADDED FORMAT, IF TOO MANY DECIMALS IT WON'T PROCESS....
-                                IvaAmt = RoundUpToDecimals(IvaAmt, 2)
-                                TotalTax_New = TotalTax_New + CDbl(IvaAmt) '----04/12/19 sir 1794, when ea and cs present one cent difference and it doesn't generate cfdi
-                            End If
-                            CsImpIvaIeps = (Val(CStr(CSPrice)) * DR("csshipped")) + Val(IvaAmt) + Val(IEPSAmt)
-                            '' CsImpIvaIeps = (Val(UnitPrice) * DR("CSSHIPPED")) + Val(IvaAmt)
-                            Units = "CA"
-                            'addenda does not get created because when ea and cs present, I did not have the NUMLIN for this 1stline created (CA), only for EA.
-                            DTL = DTL & "NUMADU  " & DocID & vbNewLine & "FECADU  " & DocDate & vbNewLine & "ADUANA  " & PortName & vbNewLine & "EANADU  " & vbNewLine
-                            DTL = DTL & "NUMPED " & Trim(DocID) & vbNewLine
-                            DTL = DTL & "CANPAQ  " & DR("csshipped") & vbNewLine
-                            If LiqTax2 > 0 Then '---------SUGARY DRINKS--------------
-                                If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then ' don't do this bellow for free items --07/14/23  ADDED SEPARATELIQTAXFLAG
-                                    DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
-                                    DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
-                                    DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
-                                    DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
-                                    If Val(CStr(IvaTasaDtl)) = 0 Then
-                                        DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
-                                        DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((CSPrice * DR("csshipped")) + CDbl(IEPSAmt)) & vbNewLine
-                                        IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
-                                    End If
-                                End If
-                            End If
-                            DTL = DTL & "NUMLIN  " & d & vbNewLine
-                            DTL = DTL & "D " & vbNewLine
-                            TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
-                            DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight  PesoEnKg
-                            d = d + 1
-                            PricePlusLiqTax = Val(DR("INVEAPRICE"))
-                            If IEPSTasa > 0 Then PricePlusLiqTax = Val(DR("INVEAPRICE")) + (Val(DR("INVEAPRICE")) * (IEPSTasa / 100))
-                            If LiqTax2 > 0 Then PricePlusLiqTax = Val(DR("INVEAPRICE")) + (LiqTax2 / DR("eapercs"))
-                        End If
-            UnitPrice = Format(Eaprice, "##0.00")
-            Importe = Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###")
-            TotImp = TotImp + Val(Importe)
-            IEPSAmt = vbNullString
-            If Val(CStr(IEPSTasa)) > 0 Then IEPSAmt = Format((Val(CStr(Eaprice)) * DR("eashipped")) * (IEPSTasa / 100), "##0.00###") 'SAT IEPSAmt
-            If LiqTax2 > 0 Then IEPSAmt = Format(DR("eashipped") * (LiqTax2 / DR("eapercs")), "##0.00###")
-            If SeparateLiqTaxFlag = "N" Then
-                If IEPSTasa > 0 Then UnitPrice = Format(DR("INVEAPRICE") + (DR("INVEAPRICE") * (IEPSTasa / 100)), "##0.00###")
-                If LiqTax2 > 0 Then UnitPrice = Format(Eaprice + (LiqTax2 / DR("eapercs")), "##0.00###")
-                If IEPSTasa = 0 And LiqTax2 = 0 Then
-                    Importe = Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###")
-                Else
-                    Importe = Format(Val(DR("lineprice")) + Val(DR("lineliqtax")) - CsImporte, "##0.00###")
-                End If
-            End If
-            If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
-                IEPSAmt_Prt = IEPSAmt
-                TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
-            End If
-
-            TotImp_Prt = TotImp_Prt + Val(Importe)
-            If SeparateLiqTaxFlag = "Y" And LiqTax2 > 0 Then IEPSAmt = Format((LiqTax2 / DR("eapercs")) * (DR("eashipped")), "##0.00")
-            If Val(CStr(IvaTasaDtl)) > 0 Then
-                IvaAmt = CStr(PricePlusLiqTax * DR("eashipped") * (IVATasa / 100))
-                If RFC <> "PHI830429MG6" Then '-----------------Palacio de Hierro doesn't want 0 when iva is 0 '04/20/18
-                    IvaAmt = RoundUpToDecimals(IvaAmt, 2)
-                    TotalTax_New = TotalTax_New + CDbl(IvaAmt)
-                End If
-                EaImpIvaIeps = (Val(CStr(Eaprice)) * DR("eashipped")) + Val(IvaAmt) + Val(IEPSAmt)
-                Units = "EA"
-                UOMCatalog = "H87"
-                DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine
-                '--------------------OBJECTO DE IMPUESTO WHEN EA AND CS PRESENT CS SHOULD HAVE THEIR OBJIMP ALREADY------------
-                If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
-                    If SeparateLiqTaxFlag = "N" Then
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    Else
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    End If
-                Else
-                    If Val(CStr(IvaTasaDtl)) > 0 Then
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    Else
-                        If DiscExists Then
-                            DTL = DTL & "OBJIMP 01" & vbNewLine
-                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
                         Else
-                            DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Peli = "No"
+                        End If
+                    Case "15111505" 'Gas butano Item 60080
+                        Peli = "Si"
+                        CvePeli = "1011"
+                        LiquorPresent = True 'to send insurance info when peli is present
+                        LiqPresentDtl = True
+                    Case Else
+                        LiqPresentDtl = False
+                End Select
+
+                d = d + 1
+                Eaprice = DR("INVEAPRICE")
+                CSPrice = DR("INVCSPRICE")
+
+                If DR("eashipped") > 0 And DR("csshipped") > 0 Then
+                    Units = "CE"
+                ElseIf DR("eashipped") > 0 Then
+                    Units = "EA"
+                    UOMCatalog = "H87" 'JMX NOW WANTS TO CHANGE UNIT OF MEASURE TO BE 'XBX' IF CASES, OR 'H87' IF EACHES.
+                Else 'Either just cases, or no cases and no each.  When xtra charges in detail (AC, tax, etc)
+                    Units = "CA"
+                    UOMCatalog = "XBX" 'JMX NOW WANTS TO CHANGE UNIT OF MEASURE TO BE 'XBX' IF CASES, OR 'H87' IF EACHES.
+                End If
+                If DocName = "NOTA DE CARGO" Then
+                    UOMCatalog = "ACT"
+                    ItemCatalog = "84111506"
+                End If
+
+                If DR("linetax") - DR("lineliqtax") > 0 Then 'LineTax has combined tax (iva & ieps), to get iva, substract both taxes.
+                    IvaTasaDtl = IVATasa
+                    TotAmtToBeTaxed = Val(CStr(TotAmtToBeTaxed)) + Val(DR("lineprice")) + Val(DR("lineliqtax")) 'SUBTAI
+                    TotalTax = CStr(Val(TotalTax) + (Val(DR("linetax")) - Val(DR("lineliqtax")))) 'calculate totaltax based on detail
+                Else
+                    IvaTasaDtl = 0
+                    TotAmtNotTaxable = Val(CStr(TotAmtNotTaxable)) + Val(DR("lineprice")) 'SUBTSI
+                End If
+
+                IvhdrNo = DR("invhdrnum")
+                LineNo = DR("linenum")
+                SeparateLiqTaxFlag = IepsSeparate(IvhdrNo, LineNo)
+
+                TotAmtBeforeTaxes = TotAmtBeforeTaxes + DR("lineprice")
+
+                DTL = DTL & vbNewLine 'Just to see where detail starts on text file
+                DTL = DTL & "D" & vbNewLine
+
+                Select Case Units
+                    Case Is = "EA"
+                        UnitPrice = Format(Eaprice, "##0.00")
+                        Importe = CDbl(DR("lineprice"))
+                        TotImp = TotImp + Val(Importe)
+                        If Val(CStr(IEPSTasa)) > 0 Then
+                            IEPSAmt = CDbl(DR("lineliqtax"))
+                        End If
+
+                        If LiqTax2 > 0 Then
+                            IEPSAmt = CDbl(DR("lineliqtax"))
+                        End If
+
+                        If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
+                            IEPSAmt_Prt = IEPSAmt 'Ieps printing
+                            TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
+                        End If
+
+                        If (SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0) Then 'Price should add IEPS on inv to be sent on EXTRA FIELDS
+                            If IEPSTasa > 0 Then UnitPrice = Format(Eaprice + (Eaprice * (IEPSTasa / 100)), "0.00###")
+
+                            Importe = Format(Val(DR("lineprice")) + Val(DR("lineliqtax")), "##0.00")
+                            If LiqTax2 > 0 Then UnitPrice = CStr(Val(Importe) / DR("eashipped"))
+
+                            IEPSAmt_Prt = vbNullString
+                        End If
+
+                        If IvaTasaDtl > 0 Then
+                            LineIVA = CStr(Val(DR("linetax")) - Val(DR("lineliqtax")))
+                            TotalTax_New = TotalTax_New + CDbl(LineIVA) '----04/12/19 sir 1794, when ea and cs present one cent difference and it doesn't generate cfdi
+                        End If
+
+                        TotImp_Prt = TotImp_Prt + Val(Importe)
+
+                        DTL = DTL & "CANTID  " & DR("eashipped") & vbNewLine & "CANTID_EA  " & DR("eashipped") & vbNewLine & "DESCRI  " & ItemDesc & vbNewLine
+                        DTL = DTL & "CANPAQ  " & DR("eashipped") & vbNewLine
+                        DTL = DTL & "CANEMP  " & DR("eashipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine 'per Master EDI to be able to print item code on pdf.
+                        DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine 'New SAT item code
+                        DTL = DTL & "CVEUNIDAD           " & UOMCatalog & vbNewLine
+                        DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & "1" & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
+
+                        DTLCP = DTLCP & "      COM_CPT_INIMER " & vbNewLine & vbNewLine 'Inicio de mercancia
+                        DTLCP = DTLCP & "      COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine 'BienesTransp (clave de producto)
+                        DTLCP = DTLCP & "      COM_CPT_MER_DESCRI " & ItemDesc & vbNewLine
+                        DTLCP = DTLCP & "      COM_CPT_MER_CANTID 1" & vbNewLine
+                        DTLCP = DTLCP & "      COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine
+
+                        DtlWeight = RoundUpToDecimals((DR("eashipped") / DR("eapercs") * DR("grosskg")), 2)
+                        If DtlWeight = 0 Then DtlWeight = 0.01
+                        TotWeight = TotWeight + DtlWeight
+                        DTLCP = DTLCP & "      COM_CPT_MER_PKG " & DtlWeight & vbNewLine
+
+                        'FOR PRODUCTO PELIGROSO WE NEED TO READ A TABLE FOR CLAVEMATERIALPELIGROSO
+                        If LiqPresentDtl Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   " & CvePeli & vbNewLine '3065  drinks 24% pero no más de 70%  alcohol , or 1011 gas butano
+                            DTLCP = DTLCP & "      COM_CPT_MER_EMB 4G" & vbNewLine '4C1 modified to 4G per Ma Elena
+                        End If
+                        If Peli = "No" Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
+                        End If
+                        DTLCP = DTLCP & "      COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
+                        DTLCP = DTLCP & "         COM_CPT_CMER_CANTID " & DR("eashipped") & vbNewLine
+                        DTLCP = DTLCP & "         COM_CPT_CMER_IDORI OR000001" & vbNewLine
+                        DTLCP = DTLCP & "         COM_CPT_CMER_IDDES DE000001" & vbNewLine
+                        DTLCP = DTLCP & "      COM_CPT_FINCANTRAN" & vbNewLine
+                        DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
+
+                        '----------------------CHANGES FOR FREE PRODUCT-----------------
+                        If Eaprice = 0 Then 'free
+                            Eaprice = 0.01
+                            DiscExists = True
+                            DiscPer = 100
+                            DiscAmt = 0.01 * DR("eashipped") 'DO NOT Accumulate total discount DiscAmt + (0.01 * DR("EASHIPPED"))
+                            IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
+                            LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
+                            TotDiscAmt = TotDiscAmt + DiscAmt
+                        End If
+
+                        If RFC <> "PHI830429MG6" Then '-----------------Palacio de Hierro doesn't want 0 when iva is 0
+                            If Trim(LineIVA) = vbNullString Then LineIVA = "0.00" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0.00"
+                        End If
+
+                        'NO TASIPE When 0, NO MONIPE   When 0, NO TASIEP  When 0, NO MONIEP WHEN 0
+                        If Val(CStr(IvaTasaDtl)) > 0 Then 'IF TO JUST SEND THESE WHEN > 0 
+                            DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine
+                            DTL = DTL & "MONIPE  " & LineIVA & vbNewLine
+                        End If
+
+                        '--------------------OBJECTO DE IMPUESTO ------------
+                        If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
+                            If SeparateLiqTaxFlag = "N" Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine 'TEMP CHANGED EVERYTHING TO 02
+                            Else
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            End If
+                            If Val(CStr(IvaTasaDtl)) = 0 Then DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                        Else
+                            If Val(CStr(IvaTasaDtl)) > 0 Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                If DiscExists Then
+                                    DTL = DTL & "OBJIMP 01" & vbNewLine 'WHEN FREE ITEMS NO IVA SHOULD BE REPORTED
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine ' PER MA. ELENA  ALL ITEMS SHOULD BE 02, JFC DOES NOT HAVE 01 TYPE
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                                    DTL = DTL & "IMPORTIPE " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                                End If
+                            End If
+                        End If
+
+                        If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
+                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                            DTL = DTL & "IMPORTIPE " & Format((Eaprice * DR("eashipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
+                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine
+                            TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
+                        End If
+
+                        DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
+                        DTL = DTL & "IMPIVAIEPS  " & CDbl(DR("linetotal")) & vbNewLine
+                        DTL = DTL & "PBRUDE_IEPS  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
+                        DTL = DTL & "IMPBRU_PRT  " & Importe & vbNewLine
+
+                        '********************************************SIR 1794********************************************************
+                        If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
+                            DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
+                        Else
+                            If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
+                            DTL = DTL & "PBRUDE  " & Format(Eaprice, "##0.00") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(Eaprice, "##0.00") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
+                        End If
+
+                        '---------SUGARY DRINKS------------------
+                        If LiqTax2 > 0 Then
+                            If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then
+                                DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
+                                DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
+
+                                DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
+                                'SPECITY THE IVA WHEN IT IS 0% like in SOME OF the sugar products which have IEPS but 0% IVA
+                                DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
+
+                                If Val(CStr(IvaTasaDtl)) = 0 Then
+                                    DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((Eaprice * DR("eashipped"))) + CDbl(IEPSAmt) & vbNewLine
+                                    IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
+                                Else
+
+                                End If
+                            End If
+                        End If
+
+                        If DiscExists Then
+                            DTL = DTL & "TDECON    " & DiscPer & vbNewLine
+                            DTL = DTL & "MDECON    " & (Eaprice * DR("eashipped")) * (DiscPer / 100) & vbNewLine
+                        Else
+                            DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine 'NO DESCUENTO EN DETALLE HARD CODE 0
+                        End If
+
+                        DTL = DTL & "NUMLIN    " & d & vbNewLine
+                        TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
+                    Case Is = "CA"
+                        UnitPrice = Format(CDbl(CSPrice), "##0.00")
+                        Importe = CDbl(DR("lineprice"))
+                        TotImp = TotImp + Val(Importe) 'Importe sin ieps
+                        If Val(CStr(IEPSTasa)) > 0 Then
+                            IEPSAmt = CDbl(DR("lineliqtax")) 'SAT IEPSAmt
+                        End If
+                        If LiqTax2 > 0 Then
+                            IEPSAmt = CDbl(DR("lineliqtax"))
+                        End If
+                        If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
+                            IEPSAmt_Prt = IEPSAmt 'Ieps printing
+                            TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
+                        End If
+                        If (SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0) Then 'Price should add IEPS on inv
+                            If IEPSTasa > 0 Then UnitPrice = Format(CSPrice + (CSPrice * (IEPSTasa / 100)), "##0.00000")
+                            If LiqTax2 > 0 Then UnitPrice = Format(CSPrice + LiqTax2, "##0.00000")
+                            Importe = Format(Val(DR("lineprice")) + Val(DR("lineliqtax")), "##0.00")
+                            IEPSAmt_Prt = vbNullString
+                        End If
+                        If Val(Importe) = 0 And TotInvAmt <> 0 Then 'when eaqty and csqty = 0, but detail exists, probably XTRA CHARGE!!!
+                            Importe = Format(CDbl(DR("lineprice")), "##0.00")
+                            UnitPrice = "0.00"
+                        End If
+                        If IvaTasaDtl > 0 Then
+                            LineIVA = CStr(Val(DR("linetax")) - Val(DR("lineliqtax")))
+                            TotalTax_New = TotalTax_New + CDbl(LineIVA)
+                        End If
+                        TotImp_Prt = TotImp_Prt + Val(Importe) 'Total importe a imprimir (Accumulate accordingly for printing pursposes which is diff. for SAT purposes)
+                        DTL = DTL & "D" & vbNewLine
+                        DTL = DTL & "CANTID  " & DR("csshipped") & vbNewLine & "CANTID_CA  " & DR("csshipped") & vbNewLine & "DESCRI  " & ItemDesc.ToString.Trim & vbNewLine
+                        DTL = DTL & "CANPAQ  " & DR("csshipped") & vbNewLine
+                        DTL = DTL & "CANEMP  " & DR("csshipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine
+                        DTL = DTL & "CVEUNIDAD     " & UOMCatalog & vbNewLine
+                        DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & DR("eapercs") & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
+
+                        DTLCP = DTLCP & "COM_CPT_INIMER " & vbNewLine & vbNewLine 'Inicio de mercancia
+                        DTLCP = DTLCP & "   COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine 'BienesTransp (clave de producto)
+                        DTLCP = DTLCP & "   COM_CPT_MER_DESCRI " & ItemDesc & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_CANTID 1" & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine '
+                        DtlWeight = RoundUpToDecimals(DR("csshipped") * DR("grosskg"), 2)
+                        If DtlWeight = 0 Then DtlWeight = 0.01
+                        TotWeight = TotWeight + DtlWeight
+                        DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight e  PesoEnKg
+                        If LiqPresentDtl Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no más de 70% de alcohol en volumen
+                            DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
+                        End If
+                        If Peli = "No" Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
+                        End If
+
+                        DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
+                        DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("csshipped") & vbNewLine
+                        DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
+                        DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
+                        DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
+
+                        '----------------------CHANGES FOR FREE PRODUCT-----------------
+                        If CSPrice = 0 Then 'free
+                            CSPrice = 0.01
+                            DiscExists = True
+                            DiscPer = 100
+                            DiscAmt = 0.01 * DR("csshipped")
+                            IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
+                            LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
+                            TotDiscAmt = TotDiscAmt + DiscAmt
+                        End If
+
+                        If RFC <> "PHI830429MG6" Then
+                            If Trim(LineIVA) = vbNullString Then LineIVA = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0"
+                        End If
+
+                        If Val(CStr(IvaTasaDtl)) > 0 Then
+                            DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine & "MONIPE  " & LineIVA & vbNewLine
+                        Else
+                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                        End If
+
+                        '--------------------OBJECTO DE IMPUESTO ------------
+                        If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
+                            If SeparateLiqTaxFlag = "N" Then
+                                If DiscExists Then
+                                    DTL = DTL & "OBJIMP 01" & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                End If
+                            Else
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            End If
+                        Else
+                            If Val(CStr(IvaTasaDtl)) > 0 Then
+                                If SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0 Then
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                End If
+                            Else 'ivatasadtl = 0
+                                If DiscExists Then 'IF FREE ITEM USE OBJIMP 01 (NO OBJETO DE IMPUESTO)
+                                    DTL = DTL & "OBJIMP 01" & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                End If
+                                DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                                If DiscExists = False Then
+                                    DTL = DTL & "FCTTASIPE   0.000000" & vbNewLine
+                                    DTL = DTL & "IMPORTIPE " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                                End If
+                            End If
+                        End If
+                        If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
+                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                            DTL = DTL & "IMPORTIPE " & Format((CSPrice * DR("csshipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
+                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine
+                            TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
+                        End If
+
+                        DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
+                        DTL = DTL & "IMPIVAIEPS  " & CDbl(DR("linetotal")) & vbNewLine
+                        DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine
+                        DTL = DTL & "IMPBRU_PRT  " & Importe & vbNewLine
+
+                        '********************************************SIR 1794********************************************************
+                        If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
+                            DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00") & vbNewLine
+                        Else
+                            If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
+                            DTL = DTL & "PBRUDE  " & Format(CSPrice, "##0.00") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(CSPrice, "##0.00") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
+                        End If
+
+                        TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
+                        If LiqTax2 > 0 Then '---------SUGARY DRINKS!!!!!!!!!!  1.17 per liter ------------------
+                            If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then
+                                DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
+                                DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
+                                DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
+                                DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
+
+                                If Val(CStr(IvaTasaDtl)) = 0 Then
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                                    DTL = DTL & "IMPORTIPE " & Format(CSPrice * DR("csshipped") + CDbl(IEPSAmt), "##0.00") & vbNewLine 'Base to calculate Tasa 0%
+                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                                    IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
+                                End If
+                            End If
+                        End If
+                        If DiscExists Then
+                            DTL = DTL & "TDECON    " & DiscPer & vbNewLine
+                            DTL = DTL & "MDECON    " & (CSPrice * DR("csshipped")) * (DiscPer / 100) & vbNewLine
+                        Else
+                            DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine 'NO DESCUENTO EN DETALLE HARD CODE 0
+                        End If
+
+                        DTL = DTL & "NUMLIN  " & d & vbNewLine
+                    Case Is = "CE"
+                        '---------------------LiqTax2 = 4.69-------------------------'
+                        CsImpIvaIeps = 0 : EaImpIvaIeps = 0
+                        'PRICEPLUSLIQTAX USED TO CALCULATE IVA BECAUSE IVA INCLUDES LIQ TAX ON TOP OF PRICE.
+                        PricePlusLiqTax = Val(DR("INVCSPRICE")) + (Val(DR("INVCSPRICE")) * (IEPSTasa / 100))
+                        If LiqTax2 > 0 Then PricePlusLiqTax = Val(DR("INVCSPRICE")) + LiqTax2 '---12/26/13
+                        'this line is done here because we will separate cases line from each line. Because this is the 1st line, needs to have everything
+                        UnitPrice = Format(CSPrice, "##0.00")
+                        Importe = Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###")
+                        TotImp = TotImp + Val(Importe)
+                        If Val(CStr(IEPSTasa)) > 0 Then IEPSAmt = Format((Val(CStr(CSPrice)) * DR("csshipped")) * (IEPSTasa / 100), "##0.00###") 'SAT IEPSAmt
+                        If LiqTax2 > 0 Then IEPSAmt = Format(DR("csshipped") * LiqTax2, "##0.00")
+                        If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
+                            IEPSAmt_Prt = IEPSAmt
+                            TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
+                        End If
+                        If (SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0) Then 'Price should add IEPS on inv
+                            If Val(CStr(IEPSTasa)) > 0 Then UnitPrice = Format(DR("INVCSPRICE") + (DR("INVCSPRICE") * (IEPSTasa / 100)), "##0.00###")
+                            If LiqTax2 > 0 Then UnitPrice = Format(DR("INVCSPRICE") + LiqTax2, "##0.00###")
+                            Importe = Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###")
+                            CsImporte = CDbl(Importe) 'ONLY USED WHEN CS & EA FOR LIQUOR NO DESGLOSE CALCULATION... ON EACH
+                            IEPSAmt_Prt = vbNullString
+                        End If
+                        TotImp_Prt = TotImp_Prt + Val(Importe)
+                        If Val(CStr(IvaTasaDtl)) > 0 Then
+                            IvaAmt = CStr(PricePlusLiqTax * DR("csshipped") * (IVATasa / 100))
+                            IvaAmt = RoundUpToDecimals(IvaAmt, 2)
+                            TotalTax_New = TotalTax_New + CDbl(IvaAmt)
+                        End If
+                        CsImpIvaIeps = (Val(CStr(CSPrice)) * DR("csshipped")) + Val(IvaAmt) + Val(IEPSAmt)
+                        Units = "CA"
+                        UOMCatalog = "XBX"
+                        DTL = DTL & "CANTID  " & DR("csshipped") & vbNewLine & "CANTID_CA  " & DR("csshipped") & vbNewLine & "DESCRI  " & ItemDesc.ToString.Trim & vbNewLine
+                        DTL = DTL & "CANPAQ  " & DR("csshipped") & vbNewLine
+                        DTL = DTL & "CANEMP  " & DR("csshipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine
+                        DTL = DTL & "CVEUNIDAD     " & UOMCatalog & vbNewLine
+                        DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & DR("eapercs") & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
+                        DTLCP = DTLCP & "COM_CPT_INIMER " & vbNewLine & vbNewLine 'Inicio de mercancia
+                        DTLCP = DTLCP & "   COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine 'BienesTransp (clave de producto)
+                        DTLCP = DTLCP & "   COM_CPT_MER_DESCRI " & ItemDesc & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_CANTID 1" & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine '
+
+                        DtlWeight = RoundUpToDecimals(DR("csshipped") * DR("grosskg"), 2)
+                        If DtlWeight = 0 Then DtlWeight = 0.01
+                        TotWeight = TotWeight + DtlWeight
+                        DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight  PesoEnKg
+                        If LiqPresentDtl Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no más de 70% de alcohol en volumen
+                            DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
+                        End If
+                        If Peli = "No" Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
+                        End If
+                        DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
+                        DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("csshipped") & vbNewLine
+                        DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
+                        DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
+                        DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
+
+                        If CSPrice = 0 Then 'FREE CASES FIRST (THIS IS WHEN CS AND EA PRESENT)
+                            CSPrice = 0.01
+                            DiscExists = True
+                            DiscPer = 100
+                            DiscAmt = 0.01 * DR("csshipped")
+                            IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
+                            LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
+                            TotDiscAmt = TotDiscAmt + DiscAmt
+                        End If
+                        If RFC <> "PHI830429MG6" Then
+                            If Trim(IvaAmt) = vbNullString Then IvaAmt = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0"
+                        End If
+
+                        DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine
+                        DTL = DTL & "MONIPE  " & IvaAmt & vbNewLine
+
+                        '--------------------OBJECTO DE IMPUESTO --------------
+                        If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
+                            If SeparateLiqTaxFlag = "N" Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            End If
+                        Else
+                            If Val(CStr(IvaTasaDtl)) > 0 Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                If DiscExists Then
+                                    DTL = DTL & "OBJIMP 01" & vbNewLine
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                                    DTL = DTL & "IMPORTIPE " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                                End If
+                            End If
+                        End If
+                        If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
+                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                            DTL = DTL & "IMPORTIPE " & Format((CSPrice * DR("csshipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
+                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine
+                            TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
+                        End If
+
+                        DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
+                        DTL = DTL & "IMPIVAIEPS  " & CsImpIvaIeps & vbNewLine
+                        DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine
+                        DTL = DTL & "IMPBRU_PRT  " & CDbl(Importe) & vbNewLine
+
+                        '********************************************SIR 1794********************************************************
+                        If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
+                            DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("csshipped"), "##0.00###") & vbNewLine
+                        Else
+                            If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
+                            DTL = DTL & "PBRUDE  " & Format(CSPrice, "##0.00") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(CSPrice, "##0.00") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(CSPrice * DR("csshipped"), "##0.00") & vbNewLine
+                        End If
+
+                        If DiscExists Then
+                            DTL = DTL & "TDECON    " & DiscPer & vbNewLine
+                            DTL = DTL & "MDECON    " & (CSPrice * DR("csshipped")) * (DiscPer / 100) & vbNewLine
+                        Else
+                            DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine 'NO DESCUENTO EN DETALLE HARD CODE 0
+                        End If
+
+                        'addenda does not get created because when ea and cs present, I did not have the NUMLIN for this 1stline created (CA), only for EA.
+                        DTL = DTL & "NUMADU  " & DocID & vbNewLine & "FECADU  " & DocDate & vbNewLine & "ADUANA  " & PortName & vbNewLine & "EANADU  " & vbNewLine
+                        DTL = DTL & "NUMPED " & Trim(DocID) & vbNewLine
+
+                        If LiqTax2 > 0 Then '---------SUGARY DRINKS--------------
+                            If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then ' don't do this bellow for free items --07/14/23  ADDED SEPARATELIQTAXFLAG
+                                DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
+                                DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
+                                DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
+                                DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
+                                If Val(CStr(IvaTasaDtl)) = 0 Then
+                                    DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((CSPrice * DR("csshipped")) + CDbl(IEPSAmt)) & vbNewLine
+                                    IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
+                                End If
+                            End If
+                        End If
+                        DTL = DTL & "NUMLIN  " & d & vbNewLine
+                        DTL = DTL & "D " & vbNewLine
+                        TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
+
+                        d = d + 1
+                        PricePlusLiqTax = Val(DR("INVEAPRICE"))
+                        If IEPSTasa > 0 Then PricePlusLiqTax = Val(DR("INVEAPRICE")) + (Val(DR("INVEAPRICE")) * (IEPSTasa / 100))
+                        If LiqTax2 > 0 Then PricePlusLiqTax = Val(DR("INVEAPRICE")) + (LiqTax2 / DR("eapercs"))
+
+                        UnitPrice = Format(Eaprice, "##0.00")
+                        Importe = Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###")
+                        TotImp = TotImp + Val(Importe)
+                        IEPSAmt = vbNullString
+                        If Val(CStr(IEPSTasa)) > 0 Then IEPSAmt = Format((Val(CStr(Eaprice)) * DR("eashipped")) * (IEPSTasa / 100), "##0.00###") 'SAT IEPSAmt
+                        If LiqTax2 > 0 Then IEPSAmt = Format(DR("eashipped") * (LiqTax2 / DR("eapercs")), "##0.00###")
+                        If SeparateLiqTaxFlag = "N" Then
+                            If IEPSTasa > 0 Then UnitPrice = Format(DR("INVEAPRICE") + (DR("INVEAPRICE") * (IEPSTasa / 100)), "##0.00###")
+                            If LiqTax2 > 0 Then UnitPrice = Format(Eaprice + (LiqTax2 / DR("eapercs")), "##0.00###")
+                            If IEPSTasa = 0 And LiqTax2 = 0 Then
+                                Importe = Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###")
+                            Else
+                                Importe = Format(Val(DR("lineprice")) + Val(DR("lineliqtax")) - CsImporte, "##0.00###")
+                            End If
+                        End If
+                        If (SeparateLiqTaxFlag = "Y" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "Y" And LiqTax2 > 0) Then
+                            IEPSAmt_Prt = IEPSAmt
+                            TotIEPS_Prt = CStr(Val(TotIEPS_Prt) + Val(IEPSAmt))
+                        End If
+
+                        TotImp_Prt = TotImp_Prt + Val(Importe)
+                        If SeparateLiqTaxFlag = "Y" And LiqTax2 > 0 Then IEPSAmt = Format((LiqTax2 / DR("eapercs")) * (DR("eashipped")), "##0.00")
+                        If Val(CStr(IvaTasaDtl)) > 0 Then
+                            IvaAmt = CStr(PricePlusLiqTax * DR("eashipped") * (IVATasa / 100))
+
+                            IvaAmt = RoundUpToDecimals(IvaAmt, 2)
+                            TotalTax_New = TotalTax_New + CDbl(IvaAmt)
+                        End If
+                        EaImpIvaIeps = (Val(CStr(Eaprice)) * DR("eashipped")) + Val(IvaAmt) + Val(IEPSAmt)
+                        Units = "EA"
+                        UOMCatalog = "H87"
+
+                        '--------------------OBJECTO DE IMPUESTO WHEN EA AND CS PRESENT CS SHOULD HAVE THEIR OBJIMP ALREADY------------
+                        If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
+                            If SeparateLiqTaxFlag = "N" Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            End If
+                        Else
+                            If Val(CStr(IvaTasaDtl)) > 0 Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                If DiscExists Then
+                                    DTL = DTL & "OBJIMP 01" & vbNewLine
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                                    DTL = DTL & "IMPORTIPE " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                                End If
+                            End If
+                        End If
+                        If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
                             DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
                             DTL = DTL & "IMPORTIPE " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
-                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine '---------------- & "TASIEP 0" & vbNewLine
+                            TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
                         End If
-                    End If
-                End If
-                If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
-                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                    DTL = DTL & "IMPORTIPE " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00") & vbNewLine
-                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine '---------------- & "TASIEP 0" & vbNewLine
-                    TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
-                End If
-                DTL = DTL & "TIPIPETR Tasa" & vbNewLine '----------------------------- & "TASIEP 0" & vbNewLine
-                DTL = DTL & "CANTID  " & DR("eashipped") & vbNewLine & "CANTID_EA  " & DR("eashipped") & vbNewLine & "DESCRI  " & ItemDesc.Trim & vbNewLine
-                DTL = DTL & "CANPAQ  " & DR("eashipped") & vbNewLine
-                DTL = DTL & "CANEMP  " & DR("eashipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
-                DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine
-                DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine
-                DTL = DTL & "CVEUNIDAD     " & UOMCatalog & vbNewLine
-                DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & "1" & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
-                DTLCP = DTLCP & "COM_CPT_INIMER " & vbNewLine & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_MER_DESCRI " & ItemDesc.Trim & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_MER_CANTID 1" & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine '
 
-                DtlWeight = RoundUpToDecimals((DR("eashipped") / DR("eapercs")) * DR("grosskg"), 2)
-                If DtlWeight = 0 Then DtlWeight = 0.01
-                TotWeight = TotWeight + DtlWeight
-                DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight e PesoEnKg
-                If LiqPresentDtl Then
-                    DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
-                    DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no más de 70% de alcohol en volumen
-                    DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
-                End If
-                If Peli = "No" Then
-                    DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
-                End If
-                DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("eashipped") & vbNewLine
-                DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
-                DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
-                DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
-                DTL = DTL & "NUMADU  " & DocID & vbNewLine & "FECADU  " & DocDate & vbNewLine & "ADUANA  " & PortName & vbNewLine & "EANADU  " & vbNewLine
-                If Eaprice = 0 Then 'FREE EA (WHEN CS AND EA PRESENT) 
-                    Eaprice = 0.01
-                    DiscExists = True
-                    DiscPer = 100
-                    DiscAmt = 0.01 * DR("eashipped")
-                    IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
-                    LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
-                    TotDiscAmt = TotDiscAmt + DiscAmt
-                End If
+                        DTL = DTL & "CANTID  " & DR("eashipped") & vbNewLine & "CANTID_EA  " & DR("eashipped") & vbNewLine & "DESCRI  " & ItemDesc.Trim & vbNewLine
+                        DTL = DTL & "CANPAQ  " & DR("eashipped") & vbNewLine
+                        DTL = DTL & "CANEMP  " & DR("eashipped") & vbNewLine & "UNIDAD  " & Units & vbNewLine & "CVESKU  " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "ESTILV     " & DR("itemcode") & vbNewLine
+                        DTL = DTL & "CVEPRODSERV     " & ItemCatalog & vbNewLine
+                        DTL = DTL & "CVEUNIDAD     " & UOMCatalog & vbNewLine
+                        DTL = DTL & "CODUPC  " & UPC & vbNewLine & "PIEPEM  " & "1" & vbNewLine & "PIEPEM2 " & DR("eapercs") & vbNewLine & "CODDUN  " & vbNewLine
+                        DTLCP = DTLCP & "COM_CPT_INIMER " & vbNewLine & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_BIENTRA " & ItemCatalog & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_DESCRI " & ItemDesc.Trim & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_CANTID 1" & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_MER_CVUNID  " & UOMCatalog & vbNewLine '
 
-                If RFC <> "PHI830429MG6" Then
-                    If Trim(IvaAmt) = vbNullString Then IvaAmt = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0"
-                End If
+                        DtlWeight = RoundUpToDecimals((DR("eashipped") / DR("eapercs")) * DR("grosskg"), 2)
+                        If DtlWeight = 0 Then DtlWeight = 0.01
+                        TotWeight = TotWeight + DtlWeight
+                        DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight e PesoEnKg
+                        If LiqPresentDtl Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL Sí  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no más de 70% de alcohol en volumen
+                            DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
+                        End If
+                        If Peli = "No" Then
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL No " & vbNewLine
+                        End If
+                        DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("eashipped") & vbNewLine
+                        DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
+                        DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
+                        DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
+                        DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
 
-                DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine & "MONIPE  " & IvaAmt & vbNewLine
+                        If Eaprice = 0 Then 'FREE EA (WHEN CS AND EA PRESENT) 
+                            Eaprice = 0.01
+                            DiscExists = True
+                            DiscPer = 100
+                            DiscAmt = 0.01 * DR("eashipped")
+                            IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
+                            LiqTax2 = 0 'In case free item, do not report any tasa, no ieps amt should be reported
+                            TotDiscAmt = TotDiscAmt + DiscAmt
+                        End If
 
-                '--------------------OBJECTO DE IMPUESTO ------------
-                If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
-                    If SeparateLiqTaxFlag = "N" Then
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    Else
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    End If
-                Else
-                    If Val(CStr(IvaTasaDtl)) > 0 Then
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    Else
+                        If RFC <> "PHI830429MG6" Then
+                            If Trim(IvaAmt) = vbNullString Then IvaAmt = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0"
+                        End If
+
+                        DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine & "MONIPE  " & IvaAmt & vbNewLine
+
+                        '--------------------OBJECTO DE IMPUESTO ------------
+                        If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
+                            If SeparateLiqTaxFlag = "N" Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            End If
+                        Else
+                            If Val(CStr(IvaTasaDtl)) > 0 Then
+                                DTL = DTL & "OBJIMP 02" & vbNewLine
+                            Else
+                                If DiscExists Then
+                                    DTL = DTL & "OBJIMP 01" & vbNewLine
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                                Else
+                                    DTL = DTL & "OBJIMP 02" & vbNewLine
+                                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                                    DTL = DTL & "IMPORTIPE " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                                End If
+                            End If
+                        End If
+                        If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
+                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
+                            DTL = DTL & "IMPORTIPE " & Format((Eaprice * DR("eashipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
+                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine
+                            TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
+                        End If
+
+                        DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
+                        DTL = DTL & "IMPIVAIEPS  " & EaImpIvaIeps & vbNewLine
+                        DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine
+                        DTL = DTL & "IMPBRU_PRT  " & CDbl(Importe) & vbNewLine
+
+                        If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
+                            DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") & vbNewLine
+                        Else
+                            If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
+                            DTL = DTL & "PBRUDE  " & Format(Eaprice, "##0.00") & vbNewLine
+                            DTL = DTL & "VALUNI  " & Format(Eaprice, "##0.00") & vbNewLine
+                            DTL = DTL & "IMPBRU  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
+                            DTL = DTL & "IMPORT  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
+                        End If
+
                         If DiscExists Then
-                            DTL = DTL & "OBJIMP 01" & vbNewLine
-                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
+                            DTL = DTL & "TDECON    " & DiscPer & vbNewLine
+                            DTL = DTL & "MDECON    " & (Eaprice * DR("eashipped")) * (DiscPer / 100) & vbNewLine
                         Else
-                            DTL = DTL & "OBJIMP 02" & vbNewLine
-                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                            DTL = DTL & "IMPORTIPE " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
+                            DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine
                         End If
-                    End If
-                End If
-                If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
-                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                    DTL = DTL & "IMPORTIPE " & Format((Eaprice * DR("eashipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
-                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine
-                    TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
-                End If
-                If SeparateLiqTaxFlag = "N" Then 'Price should add IEPS on inv '12/01/10 modify Ea and Cs prices on the file requested by WFactura
-                    DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine
-                    DTL = DTL & "IMPIVAIEPS  " & EaImpIvaIeps & vbNewLine
-                    DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine
-                    DTL = DTL & "IMPBRU_PRT  " & CDbl(Importe) & vbNewLine
-                    Importe = Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") '01/26/11 (calculation * qty does not match JETS) Put it back on 2/17/11
-                    If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then
-                        DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
-                        DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine
-                        DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") & vbNewLine
-                        DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") & vbNewLine
-                    Else
-                        If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine
-                        DTL = DTL & "PBRUDE  " & Format(Eaprice, "##0.00") & vbNewLine
-                        DTL = DTL & "VALUNI  " & Format(Eaprice, "##0.00") & vbNewLine
-                        DTL = DTL & "IMPBRU  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                        DTL = DTL & "IMPORT  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                    End If
-
-                    If DiscExists Then
-                        DTL = DTL & "TDECON    " & DiscPer & vbNewLine
-                        DTL = DTL & "MDECON    " & (Eaprice * DR("eashipped")) * (DiscPer / 100) & vbNewLine
-                    Else
-                        DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine
-                    End If
-                    If LiqTax2 > 0 Then '0---------SUGARY DRINKS----------
-                        If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then
-                            DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
-                            DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
-                            DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
-                            DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
-                            DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
-                            If Val(CStr(IvaTasaDtl)) = 0 Then
-                                DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
-                                DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((Eaprice * DR("eashipped")) + CDbl(IEPSAmt)) & vbNewLine
-                                IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
+                        If LiqTax2 > 0 Then '0---------SUGARY DRINKS----------
+                            If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then
+                                DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine
+                                DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
+                                DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine
+                                DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
+                                DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
+                                If Val(CStr(IvaTasaDtl)) = 0 Then
+                                    DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
+                                    DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((Eaprice * DR("eashipped")) + CDbl(IEPSAmt)) & vbNewLine
+                                    IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
+                                End If
                             End If
                         End If
-                    End If
-                    TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
-                    End Select
-                    Sql = "select * from custom_doc where itemcode = '" & DR("itemcode") & "'"
-                    DTL = DTL & "OBJIMP 01" & vbNewLine '05/27/22 WHEN FREE ITEMS NO IVA SHOULD BE REPORTED
-                    OCM = New OracleCommand(Sql, conn)
-                    dtc = New DataTable
-                    dtc.Load(OCM.ExecuteReader)
-                    DocID = vbNullString : DocDate = vbNullString : PortName = vbNullString
-                    If dtc.Rows.Count > 0 Then
-                        DRc = dtc.Rows(0)
-                        PortName = vbNullString & DRc("Port")
-                        FirstPortionOfName = InStr(PortName, ",")
-                        If FirstPortionOfName > 0 Then PortName = Left(PortName, FirstPortionOfName - 1)
-                        PortName = Left(PortName, 11) 'restrict port name to a max of 11 per e-mail
-                        DocID = StripChars(vbNullString & DRc("doc_id"))
-
-                        If Len(Trim(DocID)) <> 15 Then DocID = vbNullString
-
-                        DocDate = Format(DRc("doc_date"), "yyyy-MM-dd")
-
-                        If Not SorianaErr Then
-                            If Trim(DocID) <> vbNullString Then
-                                SQLInsert = "insert into custom_doc_invoice values ('" & InvNum & "','" & DR("itemcode") & "','" & DocID & "','" & Format(DRc("doc_date"), "dd-MMM-yyyy") & "','" & PortName & "')"
-                                OCM = New OracleCommand(SQLInsert, conn)
-                                OCM.ExecuteNonQuery()
-                            End If
-                        End If
-                    End If
-
-                    DTL = DTL & "NUMADU  " & DocID & vbNewLine & "FECADU  " & DocDate & vbNewLine & "ADUANA  " & PortName & vbNewLine & "EANADU  " & vbNewLine
-                    DTL = DTL & "NUMPED " & Trim(DocID) & vbNewLine
-                    DTL = DTL & "NUMLIN  " & d & vbNewLine
-                    Next
-                    DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & "COM_CPT_FINMERS " & vbNewLine
-                    DTLCPT = DTLCPT & "COM_CPT_INIMERS " & vbNewLine
-                    DTLCPT = DTLCPT & "COM_CPT_MER_PESBRU " & Format(TotWeight, "##0.00") & vbNewLine ''PESO BRUTO 
-                    DTLCPT = DTLCPT & " COM_CPT_MER_PESONET " & Format(TotWeight, "##.00") & vbNewLine ' 'PESO NETO, using peso bruto as not all items have peso neto.
-                    DTLCPT = DTLCPT & "COM_CPT_MER_UNIPES KGM" & vbNewLine
-                    DTLCPT = DTLCPT & "COM_CPT_MER_NUMTOT  " & d & vbNewLine & vbNewLine
-                End If
-                'NO ITEM CODE SO JFCITEM AND BRANCHITEM PRODUCE NOTHING, NO CS, no EA.. some times we get only remark code no item....  ie:  39-0128122,39-0210747, specially notas de cargo
-                'OR IT MIGHT BE ITEMCODE PRESENT BUT NO EA NOR CS SHIPPED, MIGHT BE ADDITIONAL CHARGE (ERROR ON PRICE OR SOMETHING ELSE) ie: 39-0356084
-                NoItemCdRoutine(InvNum, IEPSTasa, IEPSAmt)
-                Exit Sub
-                DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine 'NEED TO KNOW THE EMBALAJE CORRECTO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                ErrMsgLog = New String("*", 50) & vbNewLine & Format(Now, "MM/dd/yy HH:mm") & " -> ERROR:  " & Err.Number & "-->" & Err.Description & "." & vbNewLine & "Error on GetDtl Routine.  Prog:  DigInv3." & vbNewLine & "Total Invoices:  " & TotInvs & vbNewLine & vbNewLine & "Last SQL ran : " & vbNewLine & Sql & vbNewLine & "Item being processed for line: " & d & " " & ItemCode & vbNewLine & "Order being processed: " & InvNum & vbNewLine
-                CkFileExists(DirToOutputError, ErrMsgLog, "ERR-Dig-Inv3_3.log")
-                SendEmail(ErrMsgLog)
-                End
-                DTLCP = DTLCP & "   COM_CPT_INICANTRAN " & vbNewLine 'Inicio canidad trasladada
-                DTLCP = DTLCP & "   COM_CPT_CMER_CANTID " & DR("eashipped") & vbNewLine
-                DTLCP = DTLCP & "      COM_CPT_CMER_IDORI OR000001" & vbNewLine
-                DTLCP = DTLCP & "     COM_CPT_CMER_IDDES DE000001" & vbNewLine
-                DTLCP = DTLCP & "   COM_CPT_FINCANTRAN" & vbNewLine
-                DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & vbNewLine
-
-                '----------------------CHANGES FOR FREE PRODUCT-----------------02/09/18
-                If Eaprice = 0 Then 'FREE EA (WHEN CS AND EA PRESENT) !!!!!!!!!!
-                    Eaprice = 0.01
-                    DiscExists = True
-                    DiscPer = 100
-                    'VERSION 4.0 DO NOT ADD FREE AMOUNT TO TOTAL NOT TAXABLE-- INVOICE DOES NOT COME OUT----COMMENTING THIS...
-                    'TotAmtNotTaxable = Val(TotAmtNotTaxable) + (0.01 * DR("eashipped"))
-                    'TotAmtBeforeTaxes = TotAmtBeforeTaxes + (0.01 * DR("eashipped"))
-                    '---END VERSION 4.0  ---
-                    DiscAmt = 0.01 * DR("eashipped")
-                    IEPSTasa = 0 'In case free item has ieps do not report tasa because it won't have any ieps amount
-                    LiqTax2 = 0 '01/25/24  In case free item, do not report any tasa, no ieps amt should be reported
-                    TotDiscAmt = TotDiscAmt + DiscAmt
-                End If
-                '--------------------------------------------------------------------------------END OF 02/19/18
-                If RFC <> "PHI830429MG6" Then '-----------------Palacio de Hierro doesn't want 0 when iva is 0 '04/20/18
-                    If Trim(IvaAmt) = vbNullString Then IvaAmt = "0" : If Trim(IEPSAmt) = vbNullString Then IEPSAmt = "0" '04/20/18
-                End If
-                'VERSION 4.0  IF ZERO DO NOT USE THESE VALUES
-                '01/25/24 TEMPORARY   TAKE OUT THE IF --- CALPICO ITEMS ISSUE -----!!!!
-                'If Val(IvaTasaDtl) > 0 Then
-                DTL = DTL & "TASIPE  " & IvaTasaDtl & vbNewLine & "MONIPE  " & IvaAmt & vbNewLine
-                'End If
-                '--------------------VERSION 4.0 - OBJECTO DE IMPUESTO ------------
-                If Val(CStr(IEPSTasa)) > 0 Or LiqTax2 > 0 Then
-                    If SeparateLiqTaxFlag = "N" Then
-                        'DTL = DTL & "OBJIMP 03" & vbNewLine
-                        DTL = DTL & "OBJIMP 02" & vbNewLine 'TEMP CHANGED EVERYTHING TO 02
-                    Else
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    End If
-                Else
-                    If Val(CStr(IvaTasaDtl)) > 0 Then
-                        DTL = DTL & "OBJIMP 02" & vbNewLine
-                    Else
-                        If DiscExists Then '05/27/22
-                            DTL = DTL & "OBJIMP 01" & vbNewLine '05/27/22 WHEN FREE ITEMS NO IVA SHOULD BE REPORTED
-                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine
-                        Else
-                            DTL = DTL & "OBJIMP 02" & vbNewLine 'PER MA. ELENA  ALL ITEMS SHOULD BE 02, JFC DOES NOT HAVE 01 TYPE-ASK IF OBJIMP SHOULD EXIST FOR 8% WICH IS IEPS BUT NOT IVA--------- VERSION 4.???
-                            DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                            DTL = DTL & "IMPORTIPE " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine
-                            DTL = DTL & "TIPIPETR Tasa" & vbNewLine & "TASIEP 0" & vbNewLine
-                        End If
-                    End If
-                End If
-                If IEPSTasa = 8 Then '8% ieps but no iva, detail should show 0% IVA
-                    DTL = DTL & "TASIPE  0" & vbNewLine & "MONIPE 0 " & vbNewLine & "FCTTASIPE   0.000000" & vbNewLine
-                    DTL = DTL & "IMPORTIPE " & Format((Eaprice * DR("eashipped")) + CDbl(IEPSAmt), "##0.00") & vbNewLine
-                    DTL = DTL & "TIPIPETR Tasa" & vbNewLine '---------------------------& "TASIEP 0" & vbNewLine
-                    TotAmtNotTaxable = TotAmtNotTaxable + CDbl(IEPSAmt)
-                End If
-                '-------END VERSION 4 ADDITION
-
-                DTL = DTL & "MONIEP_IEPS  " & IEPSAmt_Prt & vbNewLine '12/27/13 added iepsamt_prnt
-                DTL = DTL & "IMPIVAIEPS  " & EaImpIvaIeps & vbNewLine
-                DTL = DTL & "PBRUDE_IEPS  " & UnitPrice & vbNewLine '01/02/18
-                DTL = DTL & "IMPBRU_PRT  " & CDbl(Importe) & vbNewLine '01/02/18
-
-                '********************************************SIR 1794********************************************************
-                If ((SeparateLiqTaxFlag = "N" And Val(CStr(IEPSTasa)) > 0) Or (SeparateLiqTaxFlag = "N" And LiqTax2 > 0)) And IEPS_NO_SeparateXml Then '-->>>04/09/19 ****SIR # 1794*** ------------->>>>>>>>>>>
-                    'DTL = DTL & "TASIEP  " & "0" & vbNewLine & "MONIEP  " & "0" & vbNewLine 'VERSION 4.  ONLY IF > 0, SO I COMMENTED
-                    DTL = DTL & "PBRUDE  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine '052124 JBS An: Added decimal format. 
-                    DTL = DTL & "VALUNI  " & Format(CDbl(UnitPrice), "##0.00###") & vbNewLine '052124 JBS An: Added decimal format. 
-                    DTL = DTL & "IMPBRU  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") & vbNewLine
-                    DTL = DTL & "IMPORT  " & Format(CDbl(UnitPrice) * DR("eashipped"), "##0.00###") & vbNewLine
-                Else
-                    If Val(CStr(IEPSTasa)) > 0 Then DTL = DTL & "TASIEP  " & IEPSTasa & vbNewLine & "MONIEP  " & CDbl(IEPSAmt) & vbNewLine 'VERSION 4 ADDED IF ? 0
-                    DTL = DTL & "PBRUDE  " & Format(Eaprice, "##0.00") & vbNewLine '052124 JBS An: Added decimal format. 
-                    DTL = DTL & "VALUNI  " & Format(Eaprice, "##0.00") & vbNewLine '052124 JBS An: Added decimal format. 
-                    DTL = DTL & "IMPBRU  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine '052124 JBS An: Added decimal format. 
-                    DTL = DTL & "IMPORT  " & Format(Eaprice * DR("eashipped"), "##0.00") & vbNewLine '052124 JBS An: Added decimal format. 
-                End If
-                '**********END*******************************SIR 1794 ************************************
-                If DiscExists Then '02/09/18
-                    DTL = DTL & "TDECON    " & DiscPer & vbNewLine
-                    DTL = DTL & "MDECON    " & (Eaprice * DR("eashipped")) * (DiscPer / 100) & vbNewLine
-                Else
-                    DTL = DTL & "TDECON  " & "0" & vbNewLine & "MDECON  " & "0.00" & vbNewLine 'NO DESCUENTO EN DETALLE HARD CODE 0
-                End If
-                If LiqTax2 > 0 Then '01/23/18---------SUGARY DRINKS!!!!!!!!!!------------------
-                    'If DiscAmt = 0 Then ' don't do this bellow for free items COMMENT OUT 07/14/23 REPLACED BY BELLOW
-                    If DiscAmt = 0 And SeparateLiqTaxFlag = "Y" Then ' don't do this bellow for free items 07/14/23 ADDED SEPARATELIQTAXFLAG
-                        DTL = DTL & "FCTTASIEP   " & IEPSperLiter & vbNewLine '05/09/18   now is 1.17 'DTL = DTL & "FCTTASIEP   1.000000" & vbNewLine '
-                        DTL = DTL & "TIPIEPTR    Cuota" & vbNewLine
-                        'DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.######") & vbNewLine
-                        DTL = DTL & "IMPORTIEP    " & Format(Val(IEPSAmt) / IEPSperLiter, "0.##") & vbNewLine 'VERSION 4  USE ONLY TWO DECIMALS, OTHERWISE ERRORS OUT
-                        DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine 'ADDED VERSION 4.0  NOT SURE IF IT WAS ON PREVIOS VERSION
-                        'VERSION 4 ADD THE FOLLOWING..... WE NEED TO SPECITY THE IVA EVEN IF IT IS 0% like in the sugar products which have IEPS but 0% IVA
-                        DTL = DTL & "MONIEP " & CDbl(Val(IEPSAmt)) & vbNewLine
-                        'If Val(LineIVA) = 0 Then '05/22/22 some 1.17 cuota also have iva, so do not report 0% if iva exists. '-- 01/11/23 added val -- bug detected inv 0981304 on this section when ea and cs sugar drinks
-                        If Val(CStr(IvaTasaDtl)) = 0 Then '01/26/23  the modificatin above, should actually be this one  ivatasadtl not lineiva.....
-                            DTL = DTL & "TASIPE 0 " & vbNewLine & "MONIPE 0" & vbNewLine & "FCTTASIPE 0.000000" & vbNewLine
-                            DTL = DTL & "TIPIPETR Tasa " & vbNewLine & "IMPORTIPE " & ((Eaprice * DR("eashipped")) + CDbl(IEPSAmt)) & vbNewLine
-                            IEPSnoIVA = IEPSnoIVA + CDbl(IEPSAmt)
-                            'TotAmtNotTaxable = TotAmtNotTaxable + IEPSAmt 'I think I don'tneed this, ck.........01/26/23 this for ea and cases.....
-                        Else
-
-                        End If
-
-                        '--------------END OF ADDITON FOR VERSION 4--------------------------------
-                    End If
-                End If
-                TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt) '2012 Oct
+                        TotIEPSAmt = TotIEPSAmt + Val(IEPSAmt)
                 End Select
-                Sql = "select * from custom_doc where itemcode = '" & DR("itemcode") & "'"
+                SQL = "select * from custom_doc where itemcode = '" & DR("itemcode") & "'"
 
-                OCM = New OracleCommand(Sql, conn)
+                OCM = New OracleCommand(SQL, conn)
                 dtc = New DataTable
                 dtc.Load(OCM.ExecuteReader)
-                'RSc = Db.CreateDynaset(SQL, &H4)
                 DocID = vbNullString : DocDate = vbNullString : PortName = vbNullString
                 If dtc.Rows.Count > 0 Then
                     DRc = dtc.Rows(0)
@@ -1684,46 +1524,40 @@ ErrHndlr:
                     If FirstPortionOfName > 0 Then PortName = Left(PortName, FirstPortionOfName - 1)
                     PortName = Left(PortName, 11) 'restrict port name to a max of 11 per e-mail
                     DocID = StripChars(vbNullString & DRc("doc_id"))
-                    If Len(Trim(DocID)) <> 15 Then '12/15/22
-                        DocID = vbNullString '12/15/22  to avoid invoice error, make sure docid has 15 characters
-                    End If
+
+                    If Len(Trim(DocID)) <> 15 Then DocID = vbNullString
+
                     DocDate = Format(DRc("doc_date"), "yyyy-MM-dd")
-                    'Do not insert into customs ----- commented on 03/09/22
-                    'Put back 07/19/23
-                    If Not SorianaErr Then '07/23/23 Soriana some times has errors so we do not want  to insert in custom_doc_invoice table  because many entries could be inserted meantime the error is solved.
-                        If Trim(DocID) <> vbNullString Then '07/21/23 if the docid < 15 in lenght, we dont report it because invoice will error out
-                            '------07/22/23 --- DO  NOT INSERT INTO CUSTOM_DOC_INVOICE IF ALREADY RECORD WAS ADDED --
+
+                    If Not SorianaErr Then
+                        If Trim(DocID) <> vbNullString Then
                             SQLInsert = "insert into custom_doc_invoice values ('" & InvNum & "','" & DR("itemcode") & "','" & DocID & "','" & Format(DRc("doc_date"), "dd-MMM-yyyy") & "','" & PortName & "')"
                             OCM = New OracleCommand(SQLInsert, conn)
                             OCM.ExecuteNonQuery()
                         End If
                     End If
                 End If
-                '-------------------------------------
+
                 DTL = DTL & "NUMADU  " & DocID & vbNewLine & "FECADU  " & DocDate & vbNewLine & "ADUANA  " & PortName & vbNewLine & "EANADU  " & vbNewLine
-                DTL = DTL & "NUMPED " & Trim(DocID) & vbNewLine '10/20/22 --> create exe on 10/24/22 NUMADU is not being used by MASTEREDI, THEY USE NUMPED
-                DTL = DTL & "NUMLIN  " & d & vbNewLine ''-------------01/05/18 placing at end, does not work properly is placed first at when dtl starts
-                Next
-                DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & "COM_CPT_FINMERS " & vbNewLine
-                'Debug.Print DTLCP
-                ' ------------TOTAL de peso en lineas de detalle y total de lineas (va antes del lineas de detalle)
-                DTLCPT = DTLCPT & "COM_CPT_INIMERS " & vbNewLine 'DELIMITADOR COMIEZO  MERCANCIA
-                DTLCPT = DTLCPT & "COM_CPT_MER_PESBRU " & Format(TotWeight, "##0.00") & vbNewLine ''PESO BRUTO HERE!!!!!!!!!!!!!!!!!!
-                DTLCPT = DTLCPT & " COM_CPT_MER_PESONET " & Format(TotWeight, "##.00") & vbNewLine ' 'PESO NETO HERE!! using peso bruto as not all items have peso neto.
-                'DTLCPT = DTLCPT & "COM_CPT_MER_UNIPES X4G " & vbNewLine 'Ver 3 12/28/23 cajas es incorrecto para el peso
-                DTLCPT = DTLCPT & "COM_CPT_MER_UNIPES KGM" & vbNewLine 'Ver 3 12/28/23 kilogramos es lo correcto para el peso
-                DTLCPT = DTLCPT & "COM_CPT_MER_NUMTOT  " & d & vbNewLine & vbNewLine '-MOD THIS TO REAL VALUE...  'NumTotalMercancias # total  mercancías q se trasladan Este # debe ser = al # d secciones Mercancia q se registren
-                'DTLCPT = DTLCPT & "" & vbNewLine & vbNewLine
-            End If
-            'NO ITEM CODE SO JFCITEM AND BRANCHITEM PRODUCE NOTHING, NO CS, no EA.. some times we get only remark code no item....  ie:  39-0128122,39-0210747, specially notas de cargo
-            'OR IT MIGHT BE ITEMCODE PRESENT BUT NO EA NOR CS SHIPPED, MIGHT BE ADDITIONAL CHARGE (ERROR ON PRICE OR SOMETHING ELSE) ie: 39-0356084
-            NoItemCdRoutine(InvNum, IEPSTasa, IEPSAmt)
-            Exit Sub
+                DTL = DTL & "NUMPED " & Trim(DocID) & vbNewLine
+                DTL = DTL & "NUMLIN  " & d & vbNewLine
+            Next
+            DTLCP = DTLCP & "COM_CPT_FINMER" & vbNewLine & "COM_CPT_FINMERS " & vbNewLine
+            DTLCPT = DTLCPT & "COM_CPT_INIMERS " & vbNewLine
+            DTLCPT = DTLCPT & "COM_CPT_MER_PESBRU " & Format(TotWeight, "##0.00") & vbNewLine ''PESO BRUTO 
+            DTLCPT = DTLCPT & " COM_CPT_MER_PESONET " & Format(TotWeight, "##.00") & vbNewLine ' 'PESO NETO, using peso bruto as not all items have peso neto.
+            DTLCPT = DTLCPT & "COM_CPT_MER_UNIPES KGM" & vbNewLine
+            DTLCPT = DTLCPT & "COM_CPT_MER_NUMTOT  " & d & vbNewLine & vbNewLine
+        End If
+        'NO ITEM CODE SO JFCITEM AND BRANCHITEM PRODUCE NOTHING, NO CS, no EA.. some times we get only remark code no item....  ie:  39-0128122,39-0210747, specially notas de cargo
+        'OR IT MIGHT BE ITEMCODE PRESENT BUT NO EA NOR CS SHIPPED, MIGHT BE ADDITIONAL CHARGE (ERROR ON PRICE OR SOMETHING ELSE) ie: 39-0356084
+        NoItemCdRoutine(InvNum, IEPSTasa, IEPSAmt)
+        Exit Sub
 ErrHndlr:
-            ErrMsgLog = New String("*", 50) & vbNewLine & Format(Now, "MM/dd/yy HH:mm") & " -> ERROR:  " & Err.Number & "-->" & Err.Description & "." & vbNewLine & "Error on GetDtl Routine.  Prog:  DigInv3." & vbNewLine & "Total Invoices:  " & TotInvs & vbNewLine & vbNewLine & "Last SQL ran : " & vbNewLine & Sql & vbNewLine & "Item being processed for line: " & d & " " & ItemCode & vbNewLine & "Order being processed: " & InvNum & vbNewLine
-            CkFileExists(DirToOutputError, ErrMsgLog, "ERR-Dig-Inv3_3.log")
-            SendEmail(ErrMsgLog)
-            End 'for error, just end and figure out what happened!!! we are using begintrans and commit, so reprocess.
+        ErrMsgLog = New String("*", 50) & vbNewLine & Format(Now, "MM/dd/yy HH:mm") & " -> ERROR:  " & Err.Number & "-->" & Err.Description & "." & vbNewLine & "Error on GetDtl Routine.  Prog:  DigInv3." & vbNewLine & "Total Invoices:  " & TotInvs & vbNewLine & vbNewLine & "Last SQL ran : " & vbNewLine & SQL & vbNewLine & "Item being processed for line: " & d & " " & ItemCode & vbNewLine & "Order being processed: " & InvNum & vbNewLine
+        CkFileExists(DirToOutputError, ErrMsgLog, "ERR-Dig-Inv3_3.log")
+        SendEmail(ErrMsgLog)
+        End
     End Sub
 
     '***********************************************************************'
@@ -2173,15 +2007,7 @@ ErrorHandler:  'write error file.
         Mid(done, 1, 1) = UCase(Mid(done, 1, 1))
         MoneyPhrase = done
     End Function
-    '***********************************************************************'
-    Private Function StripChars(ByRef WithChars As String) As String
-        Dim TmpStr As String
-        TmpStr = WithChars
-        TmpStr = Replace(TmpStr, ",", " ")
-        TmpStr = Replace(TmpStr, ".", "")
-        TmpStr = Replace(TmpStr, "-", "")
-        TmpStr = Replace(TmpStr, " ", "")
-        StripChars = TmpStr
+
     '***********************************************************************'
     'Name: CkFileExists
     'Description: Checks whether file already exists then writes the data passed in to the designated file
@@ -2266,15 +2092,15 @@ ErrHndlr:
         End If
     End Sub
 
-    'JBS memo when to commit SQL?
-ErrHndlr:
-        ErrMsgLog = New String("*", 50) & vbNewLine & "Today: " & Format(Now, "MM/DD/yy HH:mm") & "---> Eror # " & Err.Number & "-->" & Err.Description & "." & vbNewLine & "Error on DigInv3 program, UpdateInvHdr sub" & vbNewLine & "SQL: " & SQL & vbNewLine '04/09/24 Modify for Upgrade in .NET
-        ErrMsgLog = ErrMsgLog & "PROGRAM ENDED WITHOUT PROCESSING ANYTHING!!!!" & vbNewLine & Serie & Folio & vbNewLine
-        Call CkFileExists(DirToOutputError, ErrMsgLog, "ERR-Dig-Inv3_3.log")
-        SendEmail(ErrMsgLog)
-        End
-    End Sub
-    '========================================================================================
+    '***********************************************************************'
+    'Name: SendEmail
+    'Description: Sends email to the error email account
+    'Params: 
+    '   - MSG : The message to be sent in the email
+    'Return Value: N/A
+    'Precondition(s): N/A
+    'Postcondition(s): The email has been sent out to the designated email account, or in case of an error the error message has been written to the error log
+    '***********************************************************************'
     Private Sub SendEmail(ByRef MSG As String)
         Dim Body, EmailAddress, Subject As String
         On Error GoTo ErrHndlr
@@ -2290,21 +2116,11 @@ ErrHndlr:
             Body = Subject & vbNewLine & "Today: " & Format(Now, "MM/dd/yyyy HH:mm") & vbNewLine & "Check error folder on JMX: " & DirToOutputError & vbNewLine & vbNewLine & MSG
             .textBody = Body
             .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
-            .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp.kmsnet.com" ' 10/13/21   "smtp.gmail.com"  'Name of Remote SMTP Server
-            .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 25 '10/13/21     '465
-            .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout") = 60 'seconds
+            .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp.kmsnet.com"
+            .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 25
+            .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout") = 60
             .Configuration.Fields.Update()
-            '.Send()
         End With
-        'UPGRADE_NOTE: Object ObjMessage may not be destroyed until it is garbage collected. Click for more: 'ms-help://MS.VSCC.v90/dv_commoner/local/redirect.htm?keyword="6E35BFF6-CD74-4B09-9689-3E1A43DF8969"'
-        ObjMessage = Nothing
-        .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = "smtp.kmsnet.com" ' 10/13/21   "smtp.gmail.com"  'Name of Remote SMTP Server
-        .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 25 '10/13/21     '465
-        .Configuration.Fields.Item("http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout") = 60 'seconds
-        .Configuration.Fields.Update()
-        '.Send()
-        End With
-        'UPGRADE_NOTE: Object ObjMessage may not be destroyed until it is garbage collected. Click for more: 'ms-help://MS.VSCC.v90/dv_commoner/local/redirect.htm?keyword="6E35BFF6-CD74-4B09-9689-3E1A43DF8969"'
         ObjMessage = Nothing
         Exit Sub
 ErrHndlr:
@@ -2312,8 +2128,23 @@ ErrHndlr:
         Call CkFileExists(DirToOutputError, ErrMsgLog, "ERR-DigInv3_3-SendEmail.txt")
     End Sub
 
+    '***********************************************************************'
+    'Name: GetSugarCuota
+    'Description: Retrieves the sugar tax rate according to the year passed in
+    'Params: 
+    '   - Year : The year that the sugar tax rate is related to 
+    'Return Value: The sugar tax rate for the year passed in 
+    'Precondition(s): N/A
+    'Postcondition(s): Sugar tax rate has been returned 
+    '***********************************************************************'
+    Private Function GetSugarCuota(Year As String) As Double
+        Dim SQL As String, RS As Object, RS1 As Object
+        Dim OC As OracleCommand
+        Dim DT As DataTable
 
-    '============================================
+        On Error GoTo ErrHndlr
+        SQL = "select * from sugartaxrate where year = '" & Year & "'"
+
         OC = New OracleCommand(SQL, conn)
         DT = New DataTable
         DT.Load(OC.ExecuteReader)
@@ -2328,8 +2159,8 @@ ErrHndlr:
             If DT.Rows.Count > 0 Then
                 GetSugarCuota = DT.Rows(0)("SUGARRATE")
             End If
-    End If
-    Exit Function
+        End If
+        Exit Function
 ErrHndlr:
         ErrMsgLog = String.Format(50, "*") & vbNewLine & "Today: " & Format(Now, "mm/dd/yy hh:mm") & "---> Eror # " & Err.Number & "-->" & Err.Description & "." & vbNewLine &
 "Error on DigInv3 program, GetSugarCuota Function" & vbNewLine & "SQL: " & SQL & vbNewLine
@@ -2339,7 +2170,15 @@ ErrHndlr:
         End
     End Function
 
-    '====================================================
+    '***********************************************************************'
+    'Name: StripChars
+    'Description: Removes , . - and " " from the string passed in 
+    'Params: 
+    '   - WithChars : The string to be stripped 
+    'Return Value: A string with the specified characters removed
+    'Precondition(s): N/A
+    'Postcondition(s): The stripped version of the string passed in has been returned 
+    '***********************************************************************'
     Private Function StripChars(ByRef WithChars As String) As String
         Dim TmpStr As String
         TmpStr = WithChars
@@ -2347,7 +2186,7 @@ ErrHndlr:
         TmpStr = Replace(TmpStr, ".", "")
         TmpStr = Replace(TmpStr, "-", "")
         TmpStr = Replace(TmpStr, " ", "")
-        '====================================================
+        StripChars = TmpStr
     End Function
 
     '***********************************************************************'
