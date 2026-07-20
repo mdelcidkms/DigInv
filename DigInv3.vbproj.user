@@ -10,7 +10,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
     <EnableSQLServerDebugging>false</EnableSQLServerDebugging>
     <StartAction>Project</StartAction>
-    <StartArguments>CMD="ENTRY" DSN="jmx" TNSNAME="test" DBUSER="jmx0716" DBPASSWD="jmx0716" BRANCHID="39"  USERNAME="ycerda"</StartArguments>
+    <StartArguments>CMD="ENTRY" DSN="jmx" TNSNAME="jla12c" DBUSER="jmx0111" DBPASSWD="jmx0111" BRANCHID="39"  USERNAME="ycerda"</StartArguments>
     <StartWithIE>true</StartWithIE>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">

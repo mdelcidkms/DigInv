@@ -1,0 +1,22 @@
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\bin\DigInv3.exe.config
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\bin\DigInv3.exe
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\bin\DigInv3.xml
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.vbproj.AssemblyReference.cache
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.vbproj.CoreCompileInputs.cache
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.exe
+C:\JETS\Src\06 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.xml
+C:\JETS\Src\07 DigInv v1.2 VB.net 2019 CartaPorte31\bin\DigInv3.exe.config
+C:\JETS\Src\07 DigInv v1.2 VB.net 2019 CartaPorte31\bin\DigInv3.exe
+C:\JETS\Src\07 DigInv v1.2 VB.net 2019 CartaPorte31\bin\DigInv3.xml
+C:\JETS\Src\07 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.vbproj.CoreCompileInputs.cache
+C:\JETS\Src\07 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.exe
+C:\JETS\Src\07 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.xml
+c:\jets\bin\DigCM3\DigInv3.exe.config
+c:\jets\bin\DigCM3\DigInv3.exe
+c:\jets\bin\DigCM3\DigInv3.xml
+c:\jets\bin\DigInv3\DigInv3.exe.config
+c:\jets\bin\DigInv3\DigInv3.exe
+c:\jets\bin\DigInv3\DigInv3.xml
+\\jhos2bdc01\kms$\10 source code\20 JETS.Net JMX (JBS project)\DigInv3\From JBS 20250528 07 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.vbproj.CoreCompileInputs.cache
+\\jhos2bdc01\kms$\10 source code\20 JETS.Net JMX (JBS project)\DigInv3\From JBS 20250528 07 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.exe
+\\jhos2bdc01\kms$\10 source code\20 JETS.Net JMX (JBS project)\DigInv3\From JBS 20250528 07 DigInv v1.2 VB.net 2019 CartaPorte31\obj\Release\DigInv3.xml

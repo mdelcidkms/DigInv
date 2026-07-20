@@ -1,7 +1,7 @@
 Option Strict Off
 Option Explicit On
 Imports System.Data.OracleClient
-'Imports VB = Microsoft.VisualBasic
+
 Module ModDigInv3
     Public Se As Object
     Public Db As Object
@@ -27,19 +27,16 @@ Module ModDigInv3
     Public gstrParValue() As String
 
 
-    '=========================
     Public Sub OpenDatabase()
-        '=========================
         Init(Command())
         gs_UserName = GetParam("DBUSER")
         gs_ReqUser = GetParam("USERNAME")
         gs_Password = GetParam("DBPASSWD")
         gs_Hoststring = GetParam("TNSNAME")
         gs_BranchN = GetParam("BRANCHID")
-        'Se = CreateObject("Oracleinprocserver.xorasession")'04/24/2024 Change for vb.net upgrade
-        'Db = Se.OpenDatabase(GetParam("TNSNAME"), GetParam("DBUSER") & "/" & GetParam("DBPASSWD"), 0) '04/24/2024 Change for vb.net upgrade
-        Dim connString As String = "Data Source=" + GetParam("TNSNAME") + ";User Id=" + GetParam("DBUSER") + ";Password=" + GetParam("DBPASSWD") + ";" '04/23/2024 Change for vb.net upgrade
-        conn = New OracleConnection(connString) '04/24/2024 Change for vb.net upgrade
+
+        Dim connString As String = "Data Source=" + GetParam("TNSNAME") + ";User Id=" + GetParam("DBUSER") + ";Password=" + GetParam("DBPASSWD") + ";"
+        conn = New OracleConnection(connString)
 
         conn.Open()
         DBOpened = True
@@ -47,9 +44,7 @@ Module ModDigInv3
 
     End Sub
 
-    ''==========================
-    Public Sub GetBranchName() '04/24/2024 add for vb.net upgrade
-        '==========================
+    Public Sub GetBranchName()
         Dim SQL As String
         Dim OCM As OracleCommand
         Dim ODR As OracleDataReader
@@ -67,24 +62,6 @@ Module ModDigInv3
             End While
         End If
     End Sub
-
-
-
-    ''==========================
-    'Public Sub GetBranchName() '04/24/2024 replaced for vb.net upgrade
-    '    '==========================
-    '    Dim RS As Object
-    '    Dim SQL As String
-    '    SQL = "select branchname, branchalpha from branch where branchid = '" & gs_BranchN & "'"
-    '    RS = Db.CreateDynaset(SQL, &H4)
-    '    If RS.RecordCount > 0 Then
-    '        gs_BranchName = "" & RS!branchname.Value
-    '        gstrBranchAlpha = "" & RS!branchalpha.Value
-    '    End If
-    '    RS.Close()
-    'End Sub
-    ''==========================
-
 
     Public Sub Init(ByVal strCmdLine As String)
         Dim c, Value As String
