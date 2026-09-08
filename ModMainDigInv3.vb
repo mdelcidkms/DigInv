@@ -1,4 +1,4 @@
-Option Strict Off
+ÔªøOption Strict Off
 Option Explicit On
 Imports System.Data.OracleClient
 Module ModMain
@@ -49,7 +49,7 @@ Module ModMain
     Const JFCRFC As String = "JME9707037KA"
     Const Expedido As String = "06700" '"CIUDAD DE MEXICO" '04-01-22 expedido LUGEXP is now codigo postal (zip code)
     Const JFCName As String = "JFC DE MEXICO" : Const JFCGln As String = "7504016094006"
-    Const Regimen As String = "RÈgimen General de Ley Personas Morales"
+    Const Regimen As String = "R√©gimen General de Ley Personas Morales"
     Dim TotImp, TotImp_Prt As Double
     Dim TotLines As Short ' Importe a imprimir may be different than total importe for cadena if no IEPS desglose.
     Dim DirToOutputData As String
@@ -281,13 +281,13 @@ Module ModMain
                 End If
                 'EMISOR DEL DOCUMENTO
                 HDR = HDR & "RFCEMI  " & JFCRFC & vbNewLine & "NOMEMI  " & JFCName & vbNewLine & "EANEMI  " & JFCGln & vbNewLine & "NUMEMI  " & DR("JFCVENDORNUM").ToString().TrimEnd() & vbNewLine
-                HDR = HDR & "CALEMI  " & "AV.A—O DE JUAREZ NO. 160-B" & vbNewLine
+                HDR = HDR & "CALEMI  " & "AV.A√ëO DE JUAREZ NO. 160-B" & vbNewLine
                 HDR = HDR & "NEXEMI  " & vbNewLine & "NINEMI  " & vbNewLine & "COLEMI  " & "COLONIA GRANJAS SAN ANTONIO" & vbNewLine & "LOCEMI  " & "MEXICO" & vbNewLine
-                HDR = HDR & "MUNEMI  " & "IZTAPALAPA" & vbNewLine & "ESTEMI  " & "CIUDAD DE M…XICO" & vbNewLine
+                HDR = HDR & "MUNEMI  " & "IZTAPALAPA" & vbNewLine & "ESTEMI  " & "CIUDAD DE M√âXICO" & vbNewLine
                 HDR = HDR & "REFEMI  " & vbNewLine & "TELEMI  " & "(55)5686-88-93" & vbNewLine
 
                 HDRCP = HDRCP & "RFCEMI " & JFCRFC & vbNewLine & "NOMEMI  " & JFCName & vbNewLine
-                HDRCP = HDRCP & "CALEMI  " & "AV.A—O DE JUAREZ NO. 160-B" & vbNewLine
+                HDRCP = HDRCP & "CALEMI  " & "AV.A√ëO DE JUAREZ NO. 160-B" & vbNewLine
                 HDRCP = HDRCP & "NEXEMI  " & vbNewLine & "NINEMI  " & vbNewLine & "COLEMI  " & "1322" & vbNewLine & "LOCEMI  " & "09" & vbNewLine
                 HDRCP = HDRCP & "MUNEMI  " & "007" & vbNewLine & "ESTEMI  " & "CMX" & vbNewLine '01/11/23 use CMX instead of DIF per MasterEDI
                 HDRCP = HDRCP & "PAIEMI  MEX" & vbNewLine & "CODEMI  09070" & vbNewLine & "EANEMI  " & JFCGln & vbNewLine
@@ -350,8 +350,8 @@ Module ModMain
                 HDRCP = HDRCP & "      COM_CPT_UBI_RFC " & JFCRFC & vbNewLine
                 HDRCP = HDRCP & "      COM_CPT_UBI_NOM " & JFCName & vbNewLine
                 HDRCP = HDRCP & "      COM_CPT_UBI_FECHA " & Format(Now, "yyyy-MM-ddT12:00:00") & vbNewLine
-                HDRCP = HDRCP & "      COM_CPT_DOM_CAL " & "AV.A—O DE JUAREZ NO. 160-B" & vbNewLine 'Calle de la direcciÛn del domicilio de la ubicaciÛn.
-                HDRCP = HDRCP & "      COM_CPT_DOM_COL " & "1322" & vbNewLine '"AV.A—O DE JUAREZ NO. 160-B" & vbNewLine
+                HDRCP = HDRCP & "      COM_CPT_DOM_CAL " & "AV.A√ëO DE JUAREZ NO. 160-B" & vbNewLine 'Calle de la direcci√≥n del domicilio de la ubicaci√≥n.
+                HDRCP = HDRCP & "      COM_CPT_DOM_COL " & "1322" & vbNewLine '"AV.A√ëO DE JUAREZ NO. 160-B" & vbNewLine
                 HDRCP = HDRCP & "      COM_CPT_DOM_LOC 09 " & vbNewLine 'DR("city") 
                 HDRCP = HDRCP & "      COM_CPT_DOM_MUN " & "007" & vbNewLine
                 HDRCP = HDRCP & "      COM_CPT_DOM_EST  CMX" & vbNewLine
@@ -646,33 +646,68 @@ ErrHndlr:
         Dim OCM As OracleCommand
         Dim dtc As DataTable
         Dim dtr As DataRow
-        Dim Sql As String = "select c.* from sohdr a, shiproute_info b, truckdriver c where a.shipdate = b.shipdate and a.dockid = b.dockid and b.driverid = c.driverid  and a.ordernum = '" + InvNum + "'"
+
+        ' Join shiproute_info to TRUCK on TRUCKID (LEFT JOIN keeps old behavior if TRUCK row is missing)
+        ' Alias TRUCK fields to avoid ambiguity with truckdriver columns.
+        Dim Sql As String =
+        "select c.*, " &
+        "t.LICENSENUM as TRUCK_LICENSENUM, " &
+        "t.YEAR_OF_VEHICLE as TRUCK_YEAR_OF_VEHICLE, " &
+        "t.INSURANCE as TRUCK_INSURANCE, " &
+        "t.POLICYNUM as TRUCK_POLICYNUM, " &
+        "t.INSURANCE_DOWNPAYMENT as TRUCK_INSURANCE_DOWNPAYMENT " &
+        "from sohdr a " &
+        "join shiproute_info b on a.shipdate = b.shipdate and a.dockid = b.dockid " &
+        "join truckdriver c on b.driverid = c.driverid " &
+        "left join TRUCK t on b.TRUCKID = t.TRUCKID " &
+        "where a.ordernum = '" & InvNum & "'"
 
         Try
             OCM = New OracleCommand(Sql, conn)
             dtc = New DataTable
             dtc.Load(OCM.ExecuteReader)
 
+            ' Defaults used when TRUCK is missing or fields are null/blank
+            Dim truckPlate As String = "3901CM"
+            Dim truckYear As String = "2014"
+            Dim truckInsurance As String = "TOKIO MARINE CIA DE SEGUROS"
+            Dim truckPolicy As String = "TLJMX000244800"
+            Dim truckPremium As String = "900000"
+
             'TRANSPORTATION
             COMCP = "COM_CPT_INIAUTO " & vbNewLine & "COM_CPT_AUT_SCT TPAF02" & vbNewLine
-            COMCP = COMCP & "   COM_CPT_AUT_PSCT Permiso no contemplado en el cat·logo " & vbNewLine & "COM_CPT_AUT_SUTIPREM1 " & vbNewLine
-            COMCP = COMCP & "   COM_CPT_AUT_ASEGRESP Qualitas CompaÒÌa De Seguros, S.A. de C.V. " & vbNewLine & "COM_CPT_AUT_POLIRESP 0003945047 " & vbNewLine
+            COMCP = COMCP & "   COM_CPT_AUT_PSCT Permiso no contemplado en el cat√°logo " & vbNewLine & "COM_CPT_AUT_SUTIPREM1 " & vbNewLine
+            COMCP = COMCP & "   COM_CPT_AUT_ASEGRESP Qualitas Compa√±√≠a De Seguros, S.A. de C.V. " & vbNewLine & "COM_CPT_AUT_POLIRESP 0003945047 " & vbNewLine
             COMCP = COMCP & "   COM_CPT_AUT_CONVEH C2" & vbNewLine
-            'PLACA OTHER READ FROM TABLE LATER FOR NOW, DEFAULT VALUES
-            COMCP = COMCP & "   COM_CPT_AUT_PLACAV " & "3901CM " & vbNewLine
-            COMCP = COMCP & "   COM_CPT_AUT_ANIOV 2014" & vbNewLine & "COM_CPT_AUT_ASEGCAR TOKIO MARINE CIA DE SEGUROS  " & vbNewLine
-            COMCP = COMCP & "   COM_CPT_AUT_POLICAR TLJMX000244800 " & vbNewLine & "COM_CPT_AUT_PRIMSEG 900000" & vbNewLine
-            COMCP = COMCP & "COM_CPT_AUT_PESBRU  2 " & vbNewLine 'New for version 3 peso del vehiculo sin mercderia en toneladas.
-            '!!!!!!!!   CK HERE WHICH VALUES NEED TO BE CHANGED  !!!!!!!!!!!!!!!
+
+            If dtc.Rows.Count > 0 Then
+                dtr = dtc.Rows(0)
+
+                ' TRUCK fields (aliased)
+                If Trim("" & dtr("TRUCK_LICENSENUM")) <> "" Then truckPlate = Trim("" & dtr("TRUCK_LICENSENUM"))
+                If Trim("" & dtr("TRUCK_YEAR_OF_VEHICLE")) <> "" Then truckYear = Trim("" & dtr("TRUCK_YEAR_OF_VEHICLE"))
+                If Trim("" & dtr("TRUCK_INSURANCE")) <> "" Then truckInsurance = Trim("" & dtr("TRUCK_INSURANCE"))
+                If Trim("" & dtr("TRUCK_POLICYNUM")) <> "" Then truckPolicy = Trim("" & dtr("TRUCK_POLICYNUM"))
+                If Trim("" & dtr("TRUCK_INSURANCE_DOWNPAYMENT")) <> "" Then truckPremium = Trim("" & dtr("TRUCK_INSURANCE_DOWNPAYMENT"))
+            End If
+
+            ' Vehicle + insurance data (from TRUCK when available)
+            COMCP = COMCP & "   COM_CPT_AUT_PLACAV " & truckPlate & " " & vbNewLine
+            COMCP = COMCP & "   COM_CPT_AUT_ANIOV " & truckYear & vbNewLine
+            COMCP = COMCP & "COM_CPT_AUT_ASEGCAR " & truckInsurance & "  " & vbNewLine
+            COMCP = COMCP & "   COM_CPT_AUT_POLICAR " & truckPolicy & " " & vbNewLine
+            COMCP = COMCP & "COM_CPT_AUT_PRIMSEG " & truckPremium & vbNewLine
+            COMCP = COMCP & "COM_CPT_AUT_PESBRU  2 " & vbNewLine
+
             If LiquorPresent Then
-                COMCP = COMCP & "   COM_CPT_AUT_ASEGMED Atlas " & vbNewLine 'Ask for correct information
+                COMCP = COMCP & "   COM_CPT_AUT_ASEGMED Atlas " & vbNewLine
                 COMCP = COMCP & "   COM_CPT_AUT_POLMED 1010101  " & vbNewLine
             End If
 
             COMCP = COMCP & "COM_CPT_FINAUTO " & vbNewLine & "COM_CPT_INIFIGTRA " & vbNewLine & "COM_CPT_FIG_TIPFIG 01" & vbNewLine
 
             If dtc.Rows.Count > 0 Then
-                'If there is operator data, use information
+                ' Driver info from truckdriver (c.*)
                 dtr = dtc.Rows(0)
                 COMCP = COMCP & "COM_CPT_FIG_RFCFIG " & dtr("RFC") & vbNewLine & "COM_CPT_FIG_NUMLIC " & dtr("LICENSENUM") & vbNewLine
                 COMCP = COMCP & "COM_CPT_FIG_NOMFIG " & dtr("FULLNAME") & vbNewLine & "COM_CPT_FINFIGTRA " & vbNewLine & "COM_CPT_FINCPT" & vbNewLine
@@ -892,8 +927,8 @@ ErrHndlr:
 
                         'FOR PRODUCTO PELIGROSO WE NEED TO READ A TABLE FOR CLAVEMATERIALPELIGROSO
                         If LiqPresentDtl Then
-                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL SÌ  " & vbNewLine 'Material peligroso
-                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   " & CvePeli & vbNewLine '3065  drinks 24% pero no m·s de 70%  alcohol , or 1011 gas butano
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL S√≠  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   " & CvePeli & vbNewLine '3065  drinks 24% pero no m√°s de 70%  alcohol , or 1011 gas butano
                             DTLCP = DTLCP & "      COM_CPT_MER_EMB 4G" & vbNewLine '4C1 modified to 4G per Ma Elena
                         End If
                         If Peli = "No" Then
@@ -1054,8 +1089,8 @@ ErrHndlr:
                         TotWeight = TotWeight + DtlWeight
                         DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight e  PesoEnKg
                         If LiqPresentDtl Then
-                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL SÌ  " & vbNewLine 'Material peligroso
-                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no m·s de 70% de alcohol en volumen
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL S√≠  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no m√°s de 70% de alcohol en volumen
                             DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
                         End If
                         If Peli = "No" Then
@@ -1222,8 +1257,8 @@ ErrHndlr:
                         TotWeight = TotWeight + DtlWeight
                         DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight  PesoEnKg
                         If LiqPresentDtl Then
-                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL SÌ  " & vbNewLine 'Material peligroso
-                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no m·s de 70% de alcohol en volumen
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL S√≠  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no m√°s de 70% de alcohol en volumen
                             DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
                         End If
                         If Peli = "No" Then
@@ -1412,8 +1447,8 @@ ErrHndlr:
                         TotWeight = TotWeight + DtlWeight
                         DTLCP = DTLCP & "   COM_CPT_MER_PKG " & DtlWeight & vbNewLine & vbNewLine 'itemweight e PesoEnKg
                         If LiqPresentDtl Then
-                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL SÌ  " & vbNewLine 'Material peligroso
-                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no m·s de 70% de alcohol en volumen
+                            DTLCP = DTLCP & "      COM_CPT_MER_MATPEL S√≠  " & vbNewLine 'Material peligroso
+                            DTLCP = DTLCP & "      COM_CPT_MER_CVEMATPEL   3065  " & vbNewLine ' BEBIDAS ALCOHOLICAS, 24% pero no m√°s de 70% de alcohol en volumen
                             DTLCP = DTLCP & "      COM_CPT_MER_EMB 4C1" & vbNewLine
                         End If
                         If Peli = "No" Then
