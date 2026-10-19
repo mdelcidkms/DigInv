@@ -244,7 +244,7 @@ Module ModMain
 
                 HDR = HDR & "CVEREGREC   " & DR("JMX_REGIMEN_INV") & vbNewLine
 
-                If RFC = "TSO991022PB6" Then
+                If RFC = "TSO991022PB6" And DR("totalmisc") = 0 Then
                     Select Case (vbNullString & DR("groupid"))
                         Case Is = "3925"
                             HDR = HDR & "TIPADD     3" & vbNewLine
@@ -582,17 +582,10 @@ Module ModMain
 
                 SQL = "Update sohdr set moduser = 'DigInv3', moddate = '" + Format(Now, "dd-MMM-yy") + "', exported = '" + Exported + "' where ordstateid = 'R' and (exported = 'N'  or exported = 'C' ) and ordernum = '" + DR("ordernum") + "'"
 
-                If counter = 0 Then OTR = conn.BeginTransaction(IsolationLevel.ReadCommitted) Else OTR = conn.BeginTransaction()
-
-                CMOrdUpd = New OracleCommand(SQL, conn, OTR)
+                CMOrdUpd = New OracleCommand(SQL, conn)
                 CMOrdUpd.ExecuteNonQuery()
-                OTR.Commit()
-                counter += 1
 
 
-                'TODO: Looks like this is where we can add the method of payment check, if it's 'PUE' then null out the HDRCP variable and carta porte does not get generated
-                'Check DocName = "FACTURA" and method payment is 'PUE' 
-                'Does this mean that we just completely do not write out the Invoice? Or where do we specify this is a complemento de pago? 
                 If DocName = "NOTA DE CARGO" Then HDRCP = vbNullString 'Nota de cargo does no have item informaion, for the moment we do no generate carta porte.
                 If Left(DR("dockid"), 1) <> "F" Then HDRCP = vbNullString
                 If Not SorianaErr Then
@@ -662,9 +655,8 @@ ErrHndlr:
         "left join TRUCK t on b.TRUCKID = t.TRUCKID " &
         "where a.ordernum = '" & InvNum & "'"
 
-        Try
-            OCM = New OracleCommand(Sql, conn)
-            dtc = New DataTable
+        OCM = New OracleCommand(Sql, conn)
+        dtc = New DataTable
             dtc.Load(OCM.ExecuteReader)
 
             ' Defaults used when TRUCK is missing or fields are null/blank
@@ -715,10 +707,6 @@ ErrHndlr:
                 COMCP = COMCP & "COM_CPT_FIG_RFCFIG " & JFCRFC & vbNewLine & "COM_CPT_FIG_NUMLIC " & "680000033715 " & vbNewLine
                 COMCP = COMCP & "COM_CPT_FIG_NOMFIG " & "Jose Alberto Salas Aguilar " & vbNewLine & "COM_CPT_FINFIGTRA " & vbNewLine & "COM_CPT_FINCPT" & vbNewLine
             End If
-
-        Catch ex As Exception
-            Throw New Exception(ex.Message)
-        End Try
     End Sub
 
     '***********************************************************************'
@@ -2059,7 +2047,7 @@ ErrorHandler:  'write error file.
         Dim tmpdir As String = StrDir
         If tmpdir.EndsWith("\") Then tmpdir = tmpdir.Substring(0, tmpdir.Length - 1)
 
-        strDirExist = Dir(StrDir, 16)
+        strDirExist = Dir(tmpdir, 16)
         If strDirExist = "" Then
             StrData = "ERROR:  Directory not found:  " & StrDir & vbNewLine & StrData
             StrDir = DirToOutputError
